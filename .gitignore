@@ -1,0 +1,86 @@
+/.phpunit.cache
+/bootstrap/ssr
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/resources/js/actions
+/resources/js/routes
+/resources/js/wayfinder
+/storage/*.key
+/storage/pail
+/vendor
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/auth.json
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+
+# Database
+*.sqlite
+*.sqlite-journal
+/database/*.sqlite
+/database/*.sqlite-journal
+
+# Logs
+*.log
+/storage/logs/*.log
+
+# OS Files
+Thumbs.db
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+*.tmproj
+*.code-workspace
+
+# Testing
+/coverage
+/.phpunit.cache
+_ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
+
+# Backups
+*.backup
+*.bak
+*.old
+
+# Temporary files
+/storage/app/temp/*
+!/storage/app/temp/.gitkeep
+/public/temp/*
+*.tmp
+
+# Build files
+/dist
+/.parcel-cache
+
+# Package managers
+pnpm-lock.yaml
+yarn.lock
+composer.phar
+
+# Error logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

@@ -129,8 +129,8 @@ export function EditDetailDialog({ expenseId, detail, categories, open, onOpenCh
                 <Input
                   id="edit-detail-quantity"
                   type="number"
-                  step="0.01"
-                  min="0.01"
+                  step="1"
+                  min="1"
                   value={data.quantity}
                   onChange={(e) => setData('quantity', e.target.value)}
                 />

@@ -62,6 +62,15 @@ interface Props {
 export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
   const isEditing = !!expense;
 
+  // Get current date in YYYY-MM-DD format
+  const getCurrentDate = (): string => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Format date for input[type="date"] (YYYY-MM-DD)
   const formatDateForInput = (dateString: string | null | undefined): string => {
     if (!dateString) return '';
@@ -84,7 +93,7 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
 
   const { data, setData, post, put, processing, errors } = useForm({
     name: expense?.name || '',
-    expense_date: formatDateForInput(expense?.expense_date) || '',
+    expense_date: formatDateForInput(expense?.expense_date) || getCurrentDate(),
     observation: expense?.observation || '',
     document_number: expense?.document_number || '',
     document: null as File | null,
@@ -327,8 +336,8 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                         <Label className="text-xs">Cantidad *</Label>
                         <Input
                           type="number"
-                          step="0.01"
-                          min="0.01"
+                          step="1"
+                          min="1"
                           value={detail.quantity}
                           onChange={(e) => updateDetail(index, 'quantity', e.target.value)}
                         />

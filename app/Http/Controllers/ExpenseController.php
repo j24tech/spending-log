@@ -243,7 +243,7 @@ class ExpenseController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'amount' => ['required', 'numeric', 'min:0', 'decimal:0,2'],
-            'quantity' => ['required', 'numeric', 'min:0.01', 'decimal:0,2'],
+            'quantity' => ['required', 'integer', 'min:1'],
             'observation' => ['nullable', 'string', 'max:255'],
             'category_id' => ['required', 'exists:categories,id'],
         ]);

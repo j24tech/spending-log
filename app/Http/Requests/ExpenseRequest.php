@@ -32,7 +32,7 @@ class ExpenseRequest extends FormRequest
             'details.*.id' => ['nullable', 'integer', 'exists:expense_details,id'],
             'details.*.name' => ['required_if:details.*._destroy,false', 'string', 'max:150'],
             'details.*.amount' => ['required_if:details.*._destroy,false', 'numeric', 'min:0', 'decimal:0,2'],
-            'details.*.quantity' => ['required_if:details.*._destroy,false', 'numeric', 'min:0.01', 'decimal:0,2'],
+            'details.*.quantity' => ['required_if:details.*._destroy,false', 'integer', 'min:1'],
             'details.*.observation' => ['nullable', 'string', 'max:255'],
             'details.*.category_id' => ['required_if:details.*._destroy,false', 'exists:categories,id'],
             'details.*._destroy' => ['nullable', 'boolean'],

@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { PaymentMethodsTable } from './components/payment-methods-table';
 import { CreatePaymentMethodDialog } from './components/create-payment-method-dialog';
+import { type Paginated } from '@/types';
 
 interface PaymentMethod {
   id: number;
@@ -16,7 +17,7 @@ interface PaymentMethod {
 }
 
 interface Props {
-  paymentMethods: PaymentMethod[];
+  paymentMethods: Paginated<PaymentMethod>;
 }
 
 export default function PaymentMethodsIndex({ paymentMethods }: Props) {

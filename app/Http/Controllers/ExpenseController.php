@@ -21,15 +21,18 @@ class ExpenseController extends Controller
      */
     public function index(): Response
     {
+        $perPage = request('per_page', 10);
         $expenses = Expense::with(['expenseDetails.category', 'paymentMethod'])
             ->latest('expense_date')
-            ->get()
-            ->map(function ($expense) {
-                return [
-                    ...$expense->toArray(),
-                    'total' => $expense->total,
-                ];
-            });
+            ->paginate($perPage);
+
+        // Transform the collection to add the total
+        $expenses->getCollection()->transform(function ($expense) {
+            return [
+                ...$expense->toArray(),
+                'total' => $expense->total,
+            ];
+        });
 
         $categories = Category::orderBy('name')->get();
 

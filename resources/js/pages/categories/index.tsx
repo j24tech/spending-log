@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { CategoriesTable } from './components/categories-table';
 import { CreateCategoryDialog } from './components/create-category-dialog';
+import { type Paginated } from '@/types';
 
 interface Category {
   id: number;
@@ -16,7 +17,7 @@ interface Category {
 }
 
 interface Props {
-  categories: Category[];
+  categories: Paginated<Category>;
 }
 
 export default function CategoriesIndex({ categories }: Props) {

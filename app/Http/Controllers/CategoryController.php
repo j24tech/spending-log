@@ -15,7 +15,8 @@ class CategoryController extends Controller
      */
     public function index(): Response
     {
-        $categories = Category::latest()->get();
+        $perPage = request('per_page', 10);
+        $categories = Category::latest()->paginate($perPage);
 
         return Inertia::render('categories/index', [
             'categories' => $categories,

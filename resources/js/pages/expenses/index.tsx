@@ -4,6 +4,7 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { ExpensesTable } from './components/expenses-table';
+import { type Paginated } from '@/types';
 
 interface Category {
   id: number;
@@ -40,7 +41,7 @@ interface Expense {
 }
 
 interface Props {
-  expenses: Expense[];
+  expenses: Paginated<Expense>;
   categories: Category[];
 }
 

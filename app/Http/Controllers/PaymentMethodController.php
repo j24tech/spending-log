@@ -15,7 +15,8 @@ class PaymentMethodController extends Controller
      */
     public function index(): Response
     {
-        $paymentMethods = PaymentMethod::latest()->get();
+        $perPage = request('per_page', 10);
+        $paymentMethods = PaymentMethod::latest()->paginate($perPage);
 
         return Inertia::render('payment-methods/index', [
             'paymentMethods' => $paymentMethods,

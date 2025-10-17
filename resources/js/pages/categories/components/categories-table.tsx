@@ -8,6 +8,8 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { CategoryActions } from './category-actions';
+import { Pagination } from '@/components/pagination';
+import { type Paginated } from '@/types';
 
 interface Category {
   id: number;
@@ -18,43 +20,46 @@ interface Category {
 }
 
 interface Props {
-  data: Category[];
+  data: Paginated<Category>;
 }
 
 export function CategoriesTable({ data }: Props) {
   return (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Observación</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.length === 0 ? (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-muted-foreground">
-                  No hay categorías registradas
-                </TableCell>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Observación</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
-            ) : (
-              data.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell>{category.observation || '-'}</TableCell>
-                  <TableCell className="text-right">
-                    <CategoryActions category={category} />
+            </TableHeader>
+            <TableBody>
+              {data.data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    No hay categorías registradas
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              ) : (
+                data.data.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell>{category.observation || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <CategoryActions category={category} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <Pagination data={data} />
+    </div>
   );
 }
 

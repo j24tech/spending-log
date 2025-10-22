@@ -28,6 +28,7 @@ class ExpenseRequest extends FormRequest
             'document_number' => ['nullable', 'string', 'max:50'],
             'document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'], // 5MB max
             'payment_method_id' => ['required', 'exists:payment_methods,id'],
+            'discount' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
             'details' => ['required', 'array', 'min:1'],
             'details.*.id' => ['nullable', 'integer', 'exists:expense_details,id'],
             'details.*.name' => ['required_if:details.*._destroy,false', 'string', 'max:150'],
@@ -55,6 +56,39 @@ class ExpenseRequest extends FormRequest
                 'details' => [] // This will fail validation
             ]);
         }
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // Calculate subtotal from active details
+            $details = $this->input('details', []);
+            $subtotal = 0;
+
+            foreach ($details as $detail) {
+                // Skip details marked for deletion
+                if (isset($detail['_destroy']) && $detail['_destroy']) {
+                    continue;
+                }
+
+                $amount = floatval($detail['amount'] ?? 0);
+                $quantity = floatval($detail['quantity'] ?? 0);
+                $subtotal += $amount * $quantity;
+            }
+
+            $discount = floatval($this->input('discount', 0));
+
+            // Validate that discount is not greater than subtotal
+            if ($discount > $subtotal) {
+                $validator->errors()->add(
+                    'discount',
+                    'El descuento no puede ser mayor que el subtotal del gasto (' . number_format($subtotal, 2) . ').'
+                );
+            }
+        });
     }
 }
 

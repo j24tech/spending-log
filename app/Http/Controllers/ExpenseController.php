@@ -80,6 +80,7 @@ class ExpenseController extends Controller
                 'document_number' => $data['document_number'] ?? null,
                 'document_path' => $data['document_path'] ?? null,
                 'payment_method_id' => $data['payment_method_id'],
+                'discount' => $data['discount'] ?? 0,
             ]);
 
             // Create expense details
@@ -147,6 +148,7 @@ class ExpenseController extends Controller
                 'document_number' => $data['document_number'] ?? null,
                 'document_path' => $data['document_path'] ?? $expense->document_path,
                 'payment_method_id' => $data['payment_method_id'],
+                'discount' => $data['discount'] ?? 0,
             ]);
 
             // Process expense details

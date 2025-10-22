@@ -23,6 +23,7 @@ class Expense extends Model
         'document_number',
         'document_path',
         'payment_method_id',
+        'discount',
     ];
 
     /**
@@ -51,13 +52,15 @@ class Expense extends Model
     }
 
     /**
-     * Get the total amount of the expense.
+     * Get the total amount of the expense (subtotal - discount).
      */
     public function getTotalAttribute(): float
     {
-        return $this->expenseDetails->sum(function ($detail) {
+        $subtotal = $this->expenseDetails->sum(function ($detail) {
             return $detail->amount * $detail->quantity;
         });
+        
+        return max(0, $subtotal - ($this->discount ?? 0));
     }
 }
 

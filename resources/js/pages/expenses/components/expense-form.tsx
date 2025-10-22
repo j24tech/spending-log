@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FormEventHandler, useState } from 'react';
+import { FormEventHandler, useState, useEffect } from 'react';
 import InputError from '@/components/input-error';
 import { Plus, Trash2, Upload, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,6 +48,7 @@ interface Props {
     document_number: string | null;
     document_path: string | null;
     payment_method_id: number;
+    discount: number;
     expense_details: Array<{
       id: number;
       name: string;
@@ -98,6 +99,7 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
     document_number: expense?.document_number || '',
     document: null as File | null,
     payment_method_id: expense?.payment_method_id.toString() || '',
+    discount: expense?.discount?.toString() || '0',
     details: expense?.expense_details.map(d => ({
       id: d.id,
       name: d.name,
@@ -112,6 +114,19 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
   });
 
   const [fileName, setFileName] = useState<string>('');
+  const [discountError, setDiscountError] = useState<string>('');
+
+  // Validate discount whenever it or details change
+  useEffect(() => {
+    const subtotal = calculateSubtotal();
+    const discount = parseFloat(data.discount) || 0;
+    
+    if (discount > subtotal) {
+      setDiscountError(`El descuento no puede ser mayor que el subtotal del gasto ($${subtotal.toFixed(2)}).`);
+    } else {
+      setDiscountError('');
+    }
+  }, [data.discount, data.details]);
 
   const addDetail = () => {
     setData('details', [
@@ -157,7 +172,7 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
     }
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return data.details
       .filter(detail => !detail._destroy)
       .reduce((sum, detail) => {
@@ -167,8 +182,20 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
       }, 0);
   };
 
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    const discount = parseFloat(data.discount) || 0;
+    return Math.max(0, subtotal - discount);
+  };
+
   const submit: FormEventHandler = (e) => {
     e.preventDefault();
+    
+    // Prevent submission if there's a discount error
+    if (discountError) {
+      return;
+    }
+    
     if (isEditing && expense) {
       put(`/expenses/${expense.id}`);
     } else {
@@ -242,6 +269,21 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                 </SelectContent>
               </Select>
               <InputError message={errors.payment_method_id} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="discount">Descuento</Label>
+              <Input
+                id="discount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={data.discount}
+                onChange={(e) => setData('discount', e.target.value)}
+                placeholder="0.00"
+                className={discountError ? 'border-red-500 focus-visible:ring-red-500' : ''}
+              />
+              <InputError message={errors.discount || discountError} />
             </div>
           </div>
 
@@ -399,11 +441,23 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
           ))}
 
           <div className="flex justify-end pt-4 border-t">
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">
-                Total ({data.details.filter(d => !d._destroy).length} ítems)
+            <div className="text-right space-y-1">
+              <div className="flex justify-between items-center gap-8 text-sm">
+                <span className="text-muted-foreground">
+                  Subtotal ({data.details.filter(d => !d._destroy).length} ítems)
+                </span>
+                <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
               </div>
-              <div className="text-2xl font-bold">${calculateTotal().toFixed(2)}</div>
+              {parseFloat(data.discount) > 0 && (
+                <div className="flex justify-between items-center gap-8 text-sm">
+                  <span className="text-muted-foreground">Descuento</span>
+                  <span className="font-medium text-red-600">-${parseFloat(data.discount).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center gap-8 pt-2 border-t">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="text-2xl font-bold">${calculateTotal().toFixed(2)}</span>
+              </div>
               {data.details.some(d => d._destroy) && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {data.details.filter(d => d._destroy).length} ítem(s) marcado(s) para eliminar

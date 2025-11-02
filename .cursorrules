@@ -1,0 +1,334 @@
+# Reglas de Cursor para Spending Log
+
+## Stack Tecnológico
+- **Backend**: Laravel 12 (PHP 8.2+)
+- **Frontend**: React 19 + TypeScript + Inertia.js
+- **Testing**: Pest PHP + PHPUnit
+- **UI**: Radix UI + Tailwind CSS
+- **Herramientas**: ESLint, Prettier, Laravel Pint
+
+## Principios Fundamentales
+
+### SOLID
+- **S**ingle Responsibility: Cada clase/método debe tener una única responsabilidad
+- **O**pen/Closed: Abierto para extensión, cerrado para modificación
+- **L**iskov Substitution: Las subclases deben ser sustituibles por sus clases base
+- **I**nterface Segregation: Interfaces específicas mejor que una interfaz general
+- **D**ependency Inversion: Depender de abstracciones, no de implementaciones concretas
+
+### DRY (Don't Repeat Yourself)
+- Extraer lógica repetida a métodos/funciones reutilizables
+- Crear helpers, traits y servicios para compartir funcionalidad
+- Usar componentes React reutilizables para UI común
+- Evitar duplicación de validaciones, transformaciones y lógica de negocio
+
+## MCP Context7
+
+Cuando necesites documentación de librerías, usa el MCP Context7:
+1. Usa `mcp_context7_resolve-library-id` para encontrar la librería
+2. Usa `mcp_context7_get-library-docs` para obtener documentación actualizada
+3. Prioriza documentación oficial sobre ejemplos no oficiales
+
+Librerías comunes del proyecto:
+- `@inertiajs/react` - Para Inertia.js
+- `@radix-ui/*` - Para componentes UI
+- `laravel/framework` - Para Laravel
+- `pestphp/pest` - Para testing
+
+## Buenas Prácticas Backend (Laravel)
+
+### Controladores
+- Mantener controladores delgados: solo coordinación, lógica de negocio en servicios
+- Usar Form Requests para validación (`app/Http/Requests`)
+- Usar Resource classes para transformar respuestas cuando sea apropiado
+- No más de 5 métodos públicos por controlador
+- Usar dependency injection explícitamente
+
+### Modelos
+- Usar relaciones Eloquent en lugar de queries manuales cuando sea posible
+- Definir `$fillable` o `$guarded` explícitamente
+- Usar accessors/mutators para transformaciones de datos
+- Definir scopes reutilizables para queries comunes
+- Usar eventos del modelo (`creating`, `updating`, etc.) cuando sea necesario
+
+### Form Requests
+- Validar TODOS los campos necesarios
+- Proporcionar mensajes de error en español usando `messages()`
+- Usar `prepareForValidation()` para transformar datos antes de validar
+- Convertir valores vacíos a `null` para campos nullable
+- Normalizar tipos de datos (ej: strings a integers cuando sea necesario)
+
+### Servicios y Lógica de Negocio
+- Crear clases Service cuando la lógica sea compleja o reutilizable
+- Ubicar servicios en `app/Services/`
+- Un servicio = una responsabilidad específica
+- Usar interfaces para servicios cuando sea apropiado
+
+### Base de Datos
+- Usar migraciones para todos los cambios de esquema
+- Incluir rollbacks en todas las migraciones
+- Usar foreign keys con `onDelete` apropiado
+- Agregar índices para campos usados en búsquedas/filtros
+- Usar seeders para datos iniciales
+
+### Middleware
+- Mantener middleware específico y reutilizable
+- Ubicar en `app/Http/Middleware/`
+- Usar para lógica cross-cutting (auth, logging, etc.)
+
+## Buenas Prácticas Frontend (React + Inertia.js)
+
+### Componentes React
+- Componentes funcionales con hooks
+- Props tipadas con TypeScript
+- Un componente por archivo
+- Componentes pequeños y enfocados (menos de 200 líneas preferiblemente)
+- Extraer lógica compleja a hooks personalizados (`resources/js/hooks/`)
+
+### Inertia.js
+- Usar `useForm` de Inertia para formularios
+- Siempre usar `transform` en `useForm` cuando haya campos complejos o archivos
+- Para PUT/PATCH con archivos, usar `forceFormData: true` cuando sea necesario
+- El `transform` DEBE incluir TODOS los campos del formulario explícitamente
+- Usar `preserveScroll: true` en navegaciones post-submit para UX
+- Manejar errores de validación con `errors` del objeto `useForm`
+
+### Gestión de Estado
+- Preferir estado local (`useState`) para UI state
+- Usar props para comunicación padre-hijo
+- Evitar prop drilling: considerar Context API solo si es realmente necesario
+- No usar Redux/otros state managers a menos que sea absolutamente necesario
+
+### TypeScript
+- Tipar TODAS las props, funciones y valores de retorno
+- No usar `any` - usar `unknown` o tipos específicos
+- Definir interfaces/types en `resources/js/types/`
+- Usar tipos de Inertia cuando sea posible (`PageProps`, etc.)
+- Validar tipos en tiempo de compilación, no en runtime
+
+### Formularios
+- Validar en frontend para UX, pero SIEMPRE validar en backend también
+- Mostrar errores de validación inmediatamente después de submit
+- Usar campos controlados (controlled inputs)
+- Limpiar recursos (ej: `URL.createObjectURL`) en `useEffect` cleanup
+- Manejar archivos con preview antes de subir
+
+### Estilos
+- Usar Tailwind CSS para estilos
+- Componentes de Radix UI para funcionalidad compleja
+- Mantener clases de Tailwind consistentes
+- No usar estilos inline excepto para valores dinámicos
+- Agregar dark mode cuando sea apropiado usando clases de Tailwind
+
+## Testing
+
+### Requisitos de Testing
+- **SIEMPRE** escribir tests para nueva funcionalidad
+- Mantener cobertura de tests >80%
+- Ejecutar tests antes de cada commit (`composer test`)
+- No romper tests existentes al agregar nueva funcionalidad
+
+### Pest PHP (Backend)
+- Ubicar tests en `tests/Feature/` para tests de integración
+- Ubicar tests en `tests/Unit/` para tests unitarios
+- Usar Pest syntax: `test()`, `it()`, `expect()`
+- Usar factories para datos de prueba
+- Usar `RefreshDatabase` trait para tests de base de datos
+- Probar casos felices y casos de error
+- Probar validaciones, autorización y lógica de negocio
+
+### Estructura de Tests
+```php
+test('puede crear un gasto con datos válidos', function () {
+    // Arrange
+    $user = User::factory()->create();
+    
+    // Act
+    $response = $this->actingAs($user)->post('/expenses', [...]);
+    
+    // Assert
+    $response->assertRedirect();
+    $this->assertDatabaseHas('expenses', [...]);
+});
+```
+
+### Tests de Frontend (si es necesario)
+- Considerar tests con Vitest/React Testing Library para lógica compleja
+- Priorizar tests E2E cuando sea posible
+- Validar que componentes renderizan correctamente
+
+## Convenciones de Código
+
+### Nombres
+- **Archivos**: PascalCase para componentes React, camelCase para otros
+- **Clases PHP**: PascalCase (`ExpenseController`)
+- **Funciones PHP**: camelCase (`calculateTotal`)
+- **Constantes**: UPPER_SNAKE_CASE
+- **Variables**: camelCase
+- **Props React**: camelCase
+
+### Estructura de Archivos
+```
+app/
+  Http/
+    Controllers/
+    Requests/
+    Middleware/
+  Models/
+  Services/
+resources/
+  js/
+    components/    # Componentes reutilizables
+    pages/         # Páginas Inertia.js
+    hooks/         # Custom hooks
+    types/         # TypeScript types
+    lib/           # Utilidades
+```
+
+### Comentarios
+- Comentar POR QUÉ, no QUÉ (el código debe ser autoexplicativo)
+- Usar comentarios en español
+- Documentar funciones/métodos complejos con PHPDoc/JSDoc
+- Marcar TODOs/FIXMEs cuando sea necesario
+
+### Manejo de Errores
+- Usar try-catch para operaciones que puedan fallar
+- Loggear errores apropiadamente (`\Log::error()`)
+- Mostrar mensajes de error amigables al usuario
+- No exponer detalles técnicos de errores al frontend en producción
+
+## Reglas Específicas del Proyecto
+
+### Gastos (Expenses)
+- Validar que `payment_method_id` existe antes de guardar
+- Validar que `quantity` es un entero >= 1
+- Normalizar `discount` y `amount` a números con 2 decimales
+- Manejar archivos de documentos con validación de tipo y tamaño
+- Mostrar preview de imágenes antes de subir
+- Limpiar archivos antiguos cuando se actualiza el documento
+
+### Seguridad
+- Validar autenticación en todas las rutas protegidas
+- Usar `authorize()` en controladores para autorización
+- Sanitizar inputs del usuario
+- Proteger contra CSRF (Laravel lo hace automáticamente)
+- Validar tamaño y tipo de archivos subidos
+- Usar prepared statements (Eloquent lo hace automáticamente)
+
+### Performance
+- Usar eager loading (`with()`) para evitar N+1 queries
+- Paginar listados grandes
+- Usar índices en base de datos para búsquedas
+- Optimizar queries cuando sea necesario
+- Cargar componentes React de forma lazy cuando sea apropiado
+
+### Internacionalización
+- Mensajes de error en español
+- Usar traducciones de Laravel cuando sea apropiado
+- Formatear fechas y números según locale
+
+## Flujo de Trabajo
+
+### Antes de Completar una Tarea
+1. ✅ Verificar que el código sigue SOLID y DRY
+2. ✅ **CRÍTICO: NO entregar o cambiar código sin verificar que funciona** - Siempre revisar el flujo completo (frontend → backend → base de datos)
+3. ✅ Verificar que TODOS los campos requeridos están incluidos en FormRequests y validaciones
+4. ✅ Verificar que los datos se envían correctamente desde el frontend al backend
+5. ✅ Ejecutar `composer test` y asegurar que todos pasen
+6. ✅ Ejecutar `npm run lint` y corregir errores
+7. ✅ Ejecutar `npm run format` para formatear código
+8. ✅ Ejecutar `./vendor/bin/pint` para formatear PHP
+9. ✅ Verificar que no hay console.logs/var_dumps en producción
+10. ✅ Verificar que las validaciones funcionan (frontend y backend)
+11. ✅ Probar manualmente la funcionalidad
+12. ✅ Asegurar que no se rompió funcionalidad existente
+
+### Al Agregar Nueva Funcionalidad
+1. Crear/actualizar migraciones si es necesario
+2. Crear/actualizar modelos y relaciones
+3. Crear Form Request para validación
+4. Actualizar controlador con lógica mínima necesaria
+5. Crear componente React/Inertia si es necesario
+6. Agregar rutas
+7. **Escribir tests**
+8. Verificar en navegador
+
+### Al Modificar Funcionalidad Existente
+1. Leer y entender código existente
+2. Verificar tests existentes
+3. Hacer cambios manteniendo compatibilidad cuando sea posible
+4. Actualizar tests afectados
+5. Agregar nuevos tests si la funcionalidad cambia significativamente
+6. Verificar que no se rompió nada existente
+
+## Comandos Útiles
+
+```bash
+# Desarrollo
+composer dev                    # Inicia servidor, queue, logs y vite
+npm run dev                     # Solo Vite
+php artisan serve              # Solo servidor Laravel
+
+# Testing
+composer test                   # Ejecutar todos los tests
+php artisan test --filter=Expense  # Tests específicos
+
+# Formateo
+./vendor/bin/pint              # Formatear PHP
+npm run format                 # Formatear TypeScript/React
+
+# Linting
+npm run lint                   # Linter TypeScript/React
+
+# Base de datos
+php artisan migrate            # Ejecutar migraciones
+php artisan migrate:fresh --seed  # Resetear BD con datos
+```
+
+## Notas Importantes
+
+- **NUNCA** commitear archivos de configuración sensible (.env, etc.)
+- **SIEMPRE** usar transacciones de BD para operaciones que modifiquen múltiples tablas
+- **SIEMPRE** validar datos en backend, incluso si se valida en frontend
+- **NUNCA** confiar en datos del cliente
+- **SIEMPRE** limpiar recursos (archivos, listeners, etc.) cuando sea necesario
+- Mantener dependencias actualizadas pero estables
+- Documentar decisiones arquitectónicas importantes
+
+## Operaciones en Base de Datos
+
+- **CRÍTICO: ANTES de cualquier operación destructiva en la base de datos, DEBES preguntar explícitamente al usuario y obtener su aprobación**
+- Operaciones que requieren aprobación:
+  - `migrate:fresh` - Borrar toda la BD y recrear
+  - `migrate:refresh` - Rollback y re-migrar
+  - `migrate:reset` - Rollback todas las migraciones
+  - `migrate:rollback` - Rollback migraciones
+  - `db:seed` - Ejecutar seeders (puede agregar datos duplicados)
+  - Modificar o ejecutar seeders que borren/modifiquen datos existentes
+  - Cualquier script o comando que modifique/elimine datos en producción
+  - Queries manuales en tinker que eliminen o modifiquen datos
+- NO ejecutar estas operaciones sin la aprobación explícita del usuario
+- Si el usuario menciona datos en producción o ambiente real, ser EXTRA cauteloso
+- En caso de duda, SIEMPRE preguntar antes de ejecutar
+
+## Resolución de Problemas Comunes
+
+### Inertia.js no envía datos en PUT
+- Verificar que `transform` incluye TODOS los campos
+- Usar `forceFormData: true` cuando haya archivos
+- Asegurar que `data` del `useForm` tiene los valores correctos antes de `put()`
+
+### Validaciones fallan sin razón
+- Verificar que `prepareForValidation()` no está eliminando datos necesarios
+- Asegurar que valores vacíos se convierten a `null` solo para campos nullable
+- Verificar que los tipos de datos son correctos (string vs integer)
+
+### Tests fallan después de cambios
+- Ejecutar `php artisan migrate:fresh` para resetear BD de tests
+- Verificar que factories están actualizadas
+- Asegurar que `RefreshDatabase` está siendo usado
+
+---
+
+**Última actualización**: Generado para Spending Log - Laravel 12 + React 19 + Inertia.js
+

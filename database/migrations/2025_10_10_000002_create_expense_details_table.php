@@ -23,7 +23,7 @@ return new class extends Migration
                 ->onUpdate('cascade')
                 ->onDelete('restrict');
             $table->timestamps();
-            
+
             // Indexes
             $table->index('expense_id', 'idx_expense_details_expense_id');
             $table->index('category_id', 'idx_expense_details_category_id');
@@ -39,4 +39,3 @@ return new class extends Migration
         Schema::dropIfExists('expense_details');
     }
 };
-

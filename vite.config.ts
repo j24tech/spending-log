@@ -20,4 +20,11 @@ export default defineConfig({
     esbuild: {
         jsx: 'automatic',
     },
+    test: {
+        globals: true,
+        environment: 'happy-dom',
+        setupFiles: './tests/setup.ts',
+        include: ['resources/js/**/*.{test,spec}.{ts,tsx}'],
+        css: true,
+    },
 });

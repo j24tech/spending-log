@@ -24,13 +24,31 @@ class PaymentMethodController extends Controller
     }
 
     /**
+     * Show the form for creating a new resource.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('payment-methods/create');
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(PaymentMethodRequest $request): RedirectResponse
     {
         PaymentMethod::create($request->validated());
 
-        return to_route('payment-methods.index')->with('success', 'Método de pago creado exitosamente');
+        return to_route('payment-methods.index');
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(PaymentMethod $paymentMethod): Response
+    {
+        return Inertia::render('payment-methods/edit', [
+            'paymentMethod' => $paymentMethod,
+        ]);
     }
 
     /**
@@ -40,7 +58,7 @@ class PaymentMethodController extends Controller
     {
         $paymentMethod->update($request->validated());
 
-        return to_route('payment-methods.index')->with('success', 'Método de pago actualizado exitosamente');
+        return to_route('payment-methods.index');
     }
 
     /**
@@ -50,7 +68,6 @@ class PaymentMethodController extends Controller
     {
         $paymentMethod->delete();
 
-        return to_route('payment-methods.index')->with('success', 'Método de pago eliminado exitosamente');
+        return to_route('payment-methods.index');
     }
 }
-

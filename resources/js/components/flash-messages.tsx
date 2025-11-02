@@ -1,47 +1,68 @@
-import { useEffect } from 'react';
+import { useFlash } from '@/contexts/FlashContext';
+import { toast } from '@/hooks/use-toast';
 import { usePage } from '@inertiajs/react';
-import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, XCircle, Info } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface Flash {
-  success?: string;
-  error?: string;
-  info?: string;
+    success?: string;
+    error?: string;
+    info?: string;
 }
 
 export function FlashMessages() {
-  const { flash } = usePage().props as { flash: Flash };
-  const { toast } = useToast();
+    const { flash: sessionFlash } = usePage().props as { flash?: Flash };
+    const { flash: contextFlash, clearFlash } = useFlash();
 
-  useEffect(() => {
-    if (flash.success) {
-      toast({
-        title: "¡Éxito!",
-        description: flash.success,
-        variant: "success",
-        duration: 4000,
-      });
-    }
+    // Handle session flash messages (from Laravel redirects)
+    useEffect(() => {
+        if (sessionFlash?.success) {
+            toast({
+                title: '¡Éxito!',
+                description: sessionFlash.success,
+                variant: 'success',
+                duration: 4000,
+            });
+        }
 
-    if (flash.error) {
-      toast({
-        title: "Error",
-        description: flash.error,
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
+        if (sessionFlash?.error) {
+            toast({
+                title: 'Error',
+                description: sessionFlash.error,
+                variant: 'destructive',
+                duration: 5000,
+            });
+        }
 
-    if (flash.info) {
-      toast({
-        title: "Información",
-        description: flash.info,
-        variant: "default",
-        duration: 4000,
-      });
-    }
-  }, [flash, toast]);
+        if (sessionFlash?.info) {
+            toast({
+                title: 'Información',
+                description: sessionFlash.info,
+                variant: 'default',
+                duration: 4000,
+            });
+        }
+    }, [sessionFlash?.success, sessionFlash?.error, sessionFlash?.info]);
 
-  return null;
+    // Handle context flash messages (from setFlash calls)
+    useEffect(() => {
+        if (contextFlash) {
+            const variant =
+                contextFlash.variant === 'error'
+                    ? 'destructive'
+                    : contextFlash.variant === 'info'
+                      ? 'default'
+                      : contextFlash.variant;
+
+            toast({
+                title: contextFlash.title,
+                description: contextFlash.description,
+                variant: variant as 'success' | 'default' | 'destructive',
+                duration: contextFlash.duration,
+            });
+            // Clear the flash after showing it
+            clearFlash();
+        }
+    }, [contextFlash, clearFlash]);
+
+    return null;
 }
-

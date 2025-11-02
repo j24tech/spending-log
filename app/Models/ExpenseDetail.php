@@ -31,7 +31,7 @@ class ExpenseDetail extends Model
      */
     protected $casts = [
         'amount' => 'decimal:2',
-        'quantity' => 'decimal:2',
+        'quantity' => 'integer',
     ];
 
     /**
@@ -58,4 +58,3 @@ class ExpenseDetail extends Model
         return $this->amount * $this->quantity;
     }
 }
-

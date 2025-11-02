@@ -18,6 +18,16 @@ class PaymentMethod extends Model
     protected $fillable = [
         'name',
         'observation',
+        'tags',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'tags' => 'array',
     ];
 
     /**
@@ -28,4 +38,3 @@ class PaymentMethod extends Model
         return $this->hasMany(Expense::class);
     }
 }
-

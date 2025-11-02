@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name', 100);
             $table->string('observation', 255)->nullable();
             $table->timestamps();
-            
+
             // Indexes
             $table->index('name', 'idx_payment_methods_name');
         });
@@ -30,4 +30,3 @@ return new class extends Migration
         Schema::dropIfExists('payment_methods');
     }
 };
-

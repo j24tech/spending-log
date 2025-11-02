@@ -7,15 +7,18 @@ use App\Models\Category;
 use App\Models\Expense;
 use App\Models\ExpenseDetail;
 use App\Models\PaymentMethod;
+use App\Services\ExpenseService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ExpenseController extends Controller
 {
+    public function __construct(
+        protected ExpenseService $expenseService
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -26,10 +29,21 @@ class ExpenseController extends Controller
             ->latest('expense_date')
             ->paginate($perPage);
 
-        // Transform the collection to add the total
+        // Transform the collection to add the total and normalize document_path
         $expenses->getCollection()->transform(function ($expense) {
+            $data = $expense->toArray();
+            // Normalize document_path: convert empty string, null, or whitespace-only to null
+            // IMPORTANT: Unset null values so they don't appear in JSON (Inertia will omit them)
+            // This ensures the frontend receives undefined instead of null, which is easier to check
+            if (! isset($data['document_path']) ||
+                $data['document_path'] === null ||
+                (is_string($data['document_path']) && trim($data['document_path']) === '')) {
+                // Remove the key entirely if null/empty so it won't be in JSON
+                unset($data['document_path']);
+            }
+
             return [
-                ...$expense->toArray(),
+                ...$data,
                 'total' => $expense->total,
             ];
         });
@@ -62,44 +76,23 @@ class ExpenseController extends Controller
     public function store(ExpenseRequest $request): RedirectResponse
     {
         try {
-            DB::beginTransaction();
-
             $data = $request->validated();
-            
-            // Handle document upload
+
+            // Handle document file if present
             if ($request->hasFile('document')) {
-                $path = $request->file('document')->store('expense-documents', 'public');
-                $data['document_path'] = $path;
+                $data['document'] = $request->file('document');
             }
 
-            // Create expense
-            $expense = Expense::create([
-                'name' => $data['name'],
-                'expense_date' => $data['expense_date'],
-                'observation' => $data['observation'] ?? null,
-                'document_number' => $data['document_number'] ?? null,
-                'document_path' => $data['document_path'] ?? null,
-                'payment_method_id' => $data['payment_method_id'],
-                'discount' => $data['discount'] ?? 0,
+            $this->expenseService->createExpense($data);
+
+            return to_route('expenses.index');
+        } catch (\Exception $e) {
+            \Log::error('Error creating expense', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            // Create expense details
-            foreach ($data['details'] as $detail) {
-                $expense->expenseDetails()->create([
-                    'name' => $detail['name'],
-                    'amount' => $detail['amount'],
-                    'quantity' => $detail['quantity'],
-                    'observation' => $detail['observation'] ?? null,
-                    'category_id' => $detail['category_id'],
-                ]);
-            }
-
-            DB::commit();
-
-            return to_route('expenses.index')->with('success', 'Gasto creado exitosamente');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error al crear el gasto: ' . $e->getMessage());
+            return back();
         }
     }
 
@@ -109,7 +102,7 @@ class ExpenseController extends Controller
     public function edit(Expense $expense): Response
     {
         $expense->load(['expenseDetails.category', 'paymentMethod']);
-        
+
         $categories = Category::orderBy('name')->get();
         $paymentMethods = PaymentMethod::orderBy('name')->get();
 
@@ -126,90 +119,30 @@ class ExpenseController extends Controller
     public function update(ExpenseRequest $request, Expense $expense): RedirectResponse
     {
         try {
-            DB::beginTransaction();
-
             $data = $request->validated();
 
-            // Handle document upload
+            // Handle document file if present
             if ($request->hasFile('document')) {
-                // Delete old document if exists
-                if ($expense->document_path) {
-                    Storage::disk('public')->delete($expense->document_path);
-                }
-                $path = $request->file('document')->store('expense-documents', 'public');
-                $data['document_path'] = $path;
+                $data['document'] = $request->file('document');
             }
 
-            // Update expense
-            $expense->update([
-                'name' => $data['name'],
-                'expense_date' => $data['expense_date'],
-                'observation' => $data['observation'] ?? null,
-                'document_number' => $data['document_number'] ?? null,
-                'document_path' => $data['document_path'] ?? $expense->document_path,
-                'payment_method_id' => $data['payment_method_id'],
-                'discount' => $data['discount'] ?? 0,
+            // Ensure delete_document flag is passed if present
+            // It should already be in validated() data, but ensure it's boolean
+            if ($request->has('delete_document')) {
+                $data['delete_document'] = filter_var($request->input('delete_document'), FILTER_VALIDATE_BOOLEAN);
+            }
+
+            $this->expenseService->updateExpense($expense, $data);
+
+            return to_route('expenses.index');
+        } catch (\Exception $e) {
+            \Log::error('Error updating expense', [
+                'expense_id' => $expense->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            // Process expense details
-            $existingDetailIds = $expense->expenseDetails()->pluck('id')->toArray();
-            $processedIds = [];
-
-            foreach ($data['details'] as $detail) {
-                // Skip details marked for deletion
-                if (isset($detail['_destroy']) && $detail['_destroy']) {
-                    if (isset($detail['id'])) {
-                        // Delete existing detail
-                        ExpenseDetail::where('id', $detail['id'])
-                            ->where('expense_id', $expense->id)
-                            ->delete();
-                    }
-                    continue;
-                }
-
-                if (isset($detail['id'])) {
-                    // Update existing detail
-                    $existingDetail = ExpenseDetail::where('id', $detail['id'])
-                        ->where('expense_id', $expense->id)
-                        ->first();
-                    
-                    if ($existingDetail) {
-                        $existingDetail->update([
-                            'name' => $detail['name'],
-                            'amount' => $detail['amount'],
-                            'quantity' => $detail['quantity'],
-                            'observation' => $detail['observation'] ?? null,
-                            'category_id' => $detail['category_id'],
-                        ]);
-                        $processedIds[] = $detail['id'];
-                    }
-                } else {
-                    // Create new detail
-                    $newDetail = $expense->expenseDetails()->create([
-                        'name' => $detail['name'],
-                        'amount' => $detail['amount'],
-                        'quantity' => $detail['quantity'],
-                        'observation' => $detail['observation'] ?? null,
-                        'category_id' => $detail['category_id'],
-                    ]);
-                    $processedIds[] = $newDetail->id;
-                }
-            }
-
-            // Delete details that were not in the submitted data (removed without _destroy flag)
-            $detailsToDelete = array_diff($existingDetailIds, $processedIds);
-            if (!empty($detailsToDelete)) {
-                ExpenseDetail::whereIn('id', $detailsToDelete)
-                    ->where('expense_id', $expense->id)
-                    ->delete();
-            }
-
-            DB::commit();
-
-            return to_route('expenses.index')->with('success', 'Gasto actualizado exitosamente');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error al actualizar el gasto: ' . $e->getMessage());
+            return back();
         }
     }
 
@@ -219,16 +152,17 @@ class ExpenseController extends Controller
     public function destroy(Expense $expense): RedirectResponse
     {
         try {
-            // Delete document if exists
-            if ($expense->document_path) {
-                Storage::disk('public')->delete($expense->document_path);
-            }
+            $this->expenseService->deleteExpense($expense);
 
-            $expense->delete();
-
-            return to_route('expenses.index')->with('success', 'Gasto eliminado exitosamente');
+            return to_route('expenses.index');
         } catch (\Exception $e) {
-            return back()->with('error', 'Error al eliminar el gasto: ' . $e->getMessage());
+            \Log::error('Error deleting expense', [
+                'expense_id' => $expense->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back();
         }
     }
 
@@ -275,5 +209,3 @@ class ExpenseController extends Controller
         return back()->with('success', 'Detalle eliminado exitosamente');
     }
 }
-
-

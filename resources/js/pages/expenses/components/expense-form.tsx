@@ -1,532 +1,1308 @@
-import { useForm } from '@inertiajs/react';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
-import { FormEventHandler, useState, useEffect } from 'react';
-import InputError from '@/components/input-error';
-import { Plus, Trash2, Upload, ArrowLeft } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link } from '@inertiajs/react';
+import { Textarea } from '@/components/ui/textarea';
+import { useFlash } from '@/contexts/FlashContext';
+import { Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
+import { FormEventHandler, useEffect, useRef, useState } from 'react';
 
 interface Category {
-  id: number;
-  name: string;
+    id: number;
+    name: string;
 }
 
 interface PaymentMethod {
-  id: number;
-  name: string;
+    id: number;
+    name: string;
 }
 
 interface ExpenseDetail {
-  id?: number; // Optional, only exists for existing details
-  name: string;
-  amount: string;
-  quantity: string;
-  observation: string;
-  category_id: string;
-  _destroy?: boolean; // Mark for deletion
+    id?: number; // Optional, only exists for existing details
+    name: string;
+    amount: string;
+    quantity: string;
+    observation: string;
+    category_id: string;
+    _destroy?: boolean; // Mark for deletion
 }
 
 interface Props {
-  categories: Category[];
-  paymentMethods: PaymentMethod[];
-  expense?: {
-    id: number;
-    name: string;
-    expense_date: string;
-    observation: string | null;
-    document_number: string | null;
-    document_path: string | null;
-    payment_method_id: number;
-    discount: number;
-    expense_details: Array<{
-      id: number;
-      name: string;
-      amount: string;
-      quantity: string;
-      observation: string | null;
-      category_id: number;
-    }>;
-  };
+    categories: Category[];
+    paymentMethods: PaymentMethod[];
+    expense?: {
+        id: number;
+        name: string;
+        expense_date: string;
+        observation: string | null;
+        document_number: string | null;
+        document_path: string | null;
+        payment_method_id: number;
+        discount: number;
+        expense_details: Array<{
+            id: number;
+            name: string;
+            amount: string;
+            quantity: string;
+            observation: string | null;
+            category_id: number;
+        }>;
+    };
 }
 
 export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
-  const isEditing = !!expense;
+    const isEditing = !!expense;
+    const { showFlash } = useFlash();
 
-  // Get current date in YYYY-MM-DD format
-  const getCurrentDate = (): string => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+    // Get current date in YYYY-MM-DD format
+    const getCurrentDate = (): string => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
-  // Format date for input[type="date"] (YYYY-MM-DD)
-  const formatDateForInput = (dateString: string | null | undefined): string => {
-    if (!dateString) return '';
-    
-    // If it's already in YYYY-MM-DD format, return as is
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      return dateString;
-    }
-    
-    // Otherwise, parse and format
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-    
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}`;
-  };
+    // Format date for input[type="date"] (YYYY-MM-DD)
+    const formatDateForInput = (
+        dateString: string | null | undefined,
+    ): string => {
+        if (!dateString) return '';
 
-  const { data, setData, post, put, processing, errors } = useForm({
-    name: expense?.name || '',
-    expense_date: formatDateForInput(expense?.expense_date) || getCurrentDate(),
-    observation: expense?.observation || '',
-    document_number: expense?.document_number || '',
-    document: null as File | null,
-    payment_method_id: expense?.payment_method_id.toString() || '',
-    discount: expense?.discount?.toString() || '0',
-    details: expense?.expense_details.map(d => ({
-      id: d.id,
-      name: d.name,
-      amount: d.amount,
-      quantity: d.quantity,
-      observation: d.observation || '',
-      category_id: d.category_id.toString(),
-      _destroy: false,
-    })) || [
-      { name: '', amount: '', quantity: '1', observation: '', category_id: '', _destroy: false }
-    ] as ExpenseDetail[],
-  });
+        // If it's already in YYYY-MM-DD format, return as is
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            return dateString;
+        }
 
-  const [fileName, setFileName] = useState<string>('');
-  const [discountError, setDiscountError] = useState<string>('');
+        // Otherwise, parse and format
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
 
-  // Validate discount whenever it or details change
-  useEffect(() => {
-    const subtotal = calculateSubtotal();
-    const discount = parseFloat(data.discount) || 0;
-    
-    if (discount > subtotal) {
-      setDiscountError(`El descuento no puede ser mayor que el subtotal del gasto ($${subtotal.toFixed(2)}).`);
-    } else {
-      setDiscountError('');
-    }
-  }, [data.discount, data.details]);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
 
-  const addDetail = () => {
-    setData('details', [
-      ...data.details,
-      { name: '', amount: '', quantity: '1', observation: '', category_id: '', _destroy: false }
+        return `${year}-${month}-${day}`;
+    };
+
+    const { data, setData, post, put, processing, errors } = useForm(
+        {
+            name: expense?.name || '',
+            expense_date:
+                formatDateForInput(expense?.expense_date) || getCurrentDate(),
+            observation: expense?.observation || '',
+            document_number: expense?.document_number || '',
+            document: null as File | null,
+            payment_method_id: expense?.payment_method_id
+                ? expense.payment_method_id.toString()
+                : '',
+            discount: expense?.discount?.toString() || '0',
+            details:
+                expense?.expense_details.map((d) => ({
+                    id: d.id,
+                    name: d.name,
+                    amount: d.amount,
+                    quantity: Math.floor(
+                        parseFloat(d.quantity) || 1,
+                    ).toString(), // Convert to integer without decimals
+                    observation: d.observation || '',
+                    category_id: d.category_id.toString(),
+                    _destroy: false,
+                })) ||
+                ([
+                    {
+                        name: '',
+                        amount: '',
+                        quantity: '1',
+                        observation: '',
+                        category_id: '',
+                        _destroy: false,
+                    },
+                ] as ExpenseDetail[]),
+        },
+        {
+            transform: (data) => {
+                // CRITICAL: Use pendingSubmitData if available (when submitting with file)
+                // This ensures we have all fields even if React state hasn't updated yet
+                const sourceData = pendingSubmitData.current || data;
+
+                // CRITICAL: This transform function MUST include ALL form fields
+                // When FormData is used (for file uploads with PUT), Inertia.js requires ALL fields to be explicitly included
+                // FormData serialization can lose data if fields are not properly included
+                const transformed: any = {};
+
+                // Include ALL required fields - these MUST be sent as strings for FormData compatibility
+                transformed.name = String(sourceData.name || '');
+
+                // Ensure expense_date is always a string in YYYY-MM-DD format
+                if (
+                    !sourceData.expense_date ||
+                    String(sourceData.expense_date).trim() === ''
+                ) {
+                    const today = new Date();
+                    transformed.expense_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                } else {
+                    // Convert date format if needed (from DD/MM/YYYY to YYYY-MM-DD)
+                    const dateStr = String(sourceData.expense_date);
+                    if (dateStr.includes('/')) {
+                        // Format: DD/MM/YYYY -> YYYY-MM-DD
+                        const [day, month, year] = dateStr.split('/');
+                        transformed.expense_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    } else {
+                        transformed.expense_date = dateStr;
+                    }
+                }
+
+                transformed.payment_method_id = String(
+                    sourceData.payment_method_id || '',
+                );
+
+                // Include ALL optional fields
+                transformed.discount = String(sourceData.discount || '0');
+                transformed.observation =
+                    sourceData.observation === ''
+                        ? null
+                        : sourceData.observation || null;
+                transformed.document_number =
+                    sourceData.document_number === ''
+                        ? null
+                        : sourceData.document_number || null;
+
+                // Serialize details array properly for FormData
+                // In FormData, arrays must be properly serialized for Laravel to parse them correctly
+                if (
+                    Array.isArray(sourceData.details) &&
+                    sourceData.details.length > 0
+                ) {
+                    transformed.details = sourceData.details.map(
+                        (detail: ExpenseDetail) => {
+                            const detailObj: any = {
+                                name: String(detail.name || ''),
+                                amount: String(detail.amount || '0'),
+                                quantity: String(detail.quantity || '1'),
+                                category_id: String(detail.category_id || ''),
+                                _destroy: detail._destroy || false,
+                            };
+
+                            // Only include id if it exists (for updates)
+                            if (detail.id) {
+                                detailObj.id = String(detail.id);
+                            }
+
+                            // Only include observation if it's not empty
+                            if (
+                                detail.observation &&
+                                detail.observation.trim() !== ''
+                            ) {
+                                detailObj.observation = detail.observation;
+                            } else {
+                                detailObj.observation = null;
+                            }
+
+                            return detailObj;
+                        },
+                    );
+                } else {
+                    transformed.details = [];
+                }
+
+                // Include document ONLY if it's a File object
+                // This is critical: only include if it's actually a File
+                if (sourceData.document instanceof File) {
+                    transformed.document = sourceData.document;
+                }
+
+                // Clear pending data after transform
+                pendingSubmitData.current = null;
+
+                return transformed;
+            },
+        },
+    );
+
+    const [fileName, setFileName] = useState<string>('');
+    // Track if user wants to delete existing document
+    const [shouldDeleteDocument, setShouldDeleteDocument] = useState(false);
+    // Initialize previewUrl with existing document path if editing
+    const [previewUrl, setPreviewUrl] = useState<string>(() => {
+        if (
+            isEditing &&
+            expense?.document_path &&
+            typeof expense.document_path === 'string' &&
+            expense.document_path.trim() !== ''
+        ) {
+            // Ensure we have a valid path - document_path from DB is like "expense-documents/filename.png"
+            const path = expense.document_path;
+            // If it's already a full URL, use it as is
+            if (path.startsWith('http://') || path.startsWith('https://')) {
+                return path;
+            }
+            // Otherwise, prepend /storage/ to make it accessible
+            // Remove any leading slashes from path to avoid double slashes
+            const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+            const imageUrl = `/storage/${cleanPath}`;
+            return imageUrl;
+        }
+        return '';
+    });
+    const [discountError, setDiscountError] = useState<string>('');
+    const [isSubmittingWithFile, setIsSubmittingWithFile] = useState(false);
+    // Use ref to store complete data for transform when submitting with file
+    const pendingSubmitData = useRef<any>(null);
+
+    // Validate discount whenever it or details change
+    useEffect(() => {
+        const subtotal = calculateSubtotal();
+        const discount = parseFloat(data.discount) || 0;
+
+        if (discount > subtotal) {
+            setDiscountError(
+                `El descuento no puede ser mayor que el subtotal del gasto ($${subtotal.toFixed(2)}).`,
+            );
+        } else {
+            setDiscountError('');
+        }
+    }, [data.discount, data.details]);
+
+    // CRITICAL: Ensure all fields are present when a document is added during edit
+    // This fixes the issue where only the file is changed and other fields are lost
+    useEffect(() => {
+        if (
+            isEditing &&
+            expense &&
+            data.document instanceof File &&
+            !isSubmittingWithFile
+        ) {
+            // Check if any required fields are missing
+            const hasAllRequiredFields =
+                data.name &&
+                data.expense_date &&
+                data.payment_method_id &&
+                data.details &&
+                data.details.length > 0;
+
+            if (!hasAllRequiredFields) {
+                // Fill missing fields from expense - this ensures transform receives all data
+                setData({
+                    ...data,
+                    name: data.name || expense.name,
+                    expense_date:
+                        data.expense_date ||
+                        formatDateForInput(expense.expense_date),
+                    payment_method_id:
+                        data.payment_method_id ||
+                        expense.payment_method_id.toString(),
+                    discount: data.discount || expense.discount.toString(),
+                    observation: data.observation ?? expense.observation ?? '',
+                    document_number:
+                        data.document_number ?? expense.document_number ?? '',
+                    details:
+                        data.details && data.details.length > 0
+                            ? data.details
+                            : expense.expense_details.map((d) => ({
+                                  id: d.id,
+                                  name: d.name,
+                                  amount: d.amount,
+                                  quantity: Math.floor(
+                                      parseFloat(d.quantity) || 1,
+                                  ).toString(),
+                                  observation: d.observation || '',
+                                  category_id: d.category_id.toString(),
+                                  _destroy: false,
+                              })),
+                });
+            }
+        }
+    }, [data.document, isEditing, expense, isSubmittingWithFile]);
+
+    // Update preview URL when document changes (new file selected or removed)
+    useEffect(() => {
+        // If a new file is selected, preview URL is already set in handleFileChange
+        // Don't override it here
+        if (data.document instanceof File) {
+            return;
+        }
+
+        // If user marked document for deletion, don't restore preview
+        if (shouldDeleteDocument) {
+            return;
+        }
+
+        // If editing and there's an existing document (and it's not null/empty), restore preview
+        if (
+            isEditing &&
+            expense?.document_path &&
+            expense.document_path.trim() !== '' &&
+            !data.document
+        ) {
+            const path = expense.document_path;
+            const imageUrl =
+                path.startsWith('http://') || path.startsWith('https://')
+                    ? path
+                    : `/storage/${path.startsWith('/') ? path.substring(1) : path}`;
+            // Only update if preview URL is different to avoid unnecessary updates
+            if (previewUrl !== imageUrl && !previewUrl.startsWith('blob:')) {
+                setPreviewUrl(imageUrl);
+            }
+        } else if (
+            (!expense?.document_path || expense.document_path.trim() === '') &&
+            !data.document
+        ) {
+            // Clear preview URL if there's no document at all (but keep blob URLs)
+            if (previewUrl && !previewUrl.startsWith('blob:')) {
+                setPreviewUrl('');
+            }
+        }
+    }, [
+        data.document,
+        expense?.document_path,
+        isEditing,
+        previewUrl,
+        shouldDeleteDocument,
     ]);
-  };
 
-  const removeDetail = (index: number) => {
-    const detail = data.details[index];
-    
-    // If it's an existing detail (has id), mark for deletion instead of removing
-    if (detail.id) {
-      const newDetails = [...data.details];
-      newDetails[index] = { ...detail, _destroy: true };
-      setData('details', newDetails);
-    } else {
-      // If it's a new detail, remove it from the array
-      const newDetails = data.details.filter((_, i) => i !== index);
-      setData('details', newDetails.length > 0 ? newDetails : [
-        { name: '', amount: '', quantity: '1', observation: '', category_id: '', _destroy: false }
-      ]);
-    }
-  };
+    // Clean up preview URL when component unmounts
+    useEffect(() => {
+        return () => {
+            // Only revoke object URLs (created with URL.createObjectURL), not regular URLs
+            if (previewUrl && previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
 
-  const restoreDetail = (index: number) => {
-    const newDetails = [...data.details];
-    newDetails[index] = { ...newDetails[index], _destroy: false };
-    setData('details', newDetails);
-  };
+    const addDetail = () => {
+        setData('details', [
+            ...data.details,
+            {
+                name: '',
+                amount: '',
+                quantity: '1',
+                observation: '',
+                category_id: '',
+                _destroy: false,
+            },
+        ]);
+    };
 
-  const updateDetail = (index: number, field: keyof ExpenseDetail, value: string) => {
-    const newDetails = [...data.details];
-    newDetails[index] = { ...newDetails[index], [field]: value };
-    setData('details', newDetails);
-  };
+    const removeDetail = (index: number) => {
+        const detail = data.details[index];
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setData('document', file);
-      setFileName(file.name);
-    }
-  };
+        // If it's an existing detail (has id), mark for deletion instead of removing
+        if (detail.id) {
+            const newDetails = [...data.details];
+            newDetails[index] = { ...detail, _destroy: true };
+            setData('details', newDetails);
+        } else {
+            // If it's a new detail, remove it from the array
+            const newDetails = data.details.filter((_, i) => i !== index);
+            setData(
+                'details',
+                newDetails.length > 0
+                    ? newDetails
+                    : [
+                          {
+                              name: '',
+                              amount: '',
+                              quantity: '1',
+                              observation: '',
+                              category_id: '',
+                              _destroy: false,
+                          },
+                      ],
+            );
+        }
+    };
 
-  const calculateSubtotal = () => {
-    return data.details
-      .filter(detail => !detail._destroy)
-      .reduce((sum, detail) => {
-        const amount = parseFloat(detail.amount) || 0;
-        const quantity = parseFloat(detail.quantity) || 0;
-        return sum + (amount * quantity);
-      }, 0);
-  };
+    const restoreDetail = (index: number) => {
+        const newDetails = [...data.details];
+        newDetails[index] = { ...newDetails[index], _destroy: false };
+        setData('details', newDetails);
+    };
 
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const discount = parseFloat(data.discount) || 0;
-    return Math.max(0, subtotal - discount);
-  };
+    const updateDetail = (
+        index: number,
+        field: keyof ExpenseDetail,
+        value: string,
+    ) => {
+        const newDetails = [...data.details];
+        // Convert quantity to integer string (remove decimals)
+        if (field === 'quantity') {
+            const intValue = Math.max(1, Math.floor(parseFloat(value) || 1));
+            newDetails[index] = {
+                ...newDetails[index],
+                [field]: intValue.toString(),
+            };
+        } else {
+            newDetails[index] = { ...newDetails[index], [field]: value };
+        }
+        setData('details', newDetails);
+    };
 
-  const submit: FormEventHandler = (e) => {
-    e.preventDefault();
-    
-    // Prevent submission if there's a discount error
-    if (discountError) {
-      return;
-    }
-    
-    if (isEditing && expense) {
-      put(`/expenses/${expense.id}`);
-    } else {
-      post('/expenses');
-    }
-  };
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Check if file is an image (PNG or JPG)
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+            if (!validTypes.includes(file.type)) {
+                alert('Por favor, selecciona solo archivos PNG o JPG');
+                e.target.value = ''; // Clear the input
+                return;
+            }
 
-  return (
-    <form onSubmit={submit} className="space-y-6">
-      {/* Header con botón volver */}
-      <div className="flex items-center gap-4">
-        <Button type="button" variant="outline" size="icon" asChild>
-          <Link href="/expenses">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">
-            {isEditing ? 'Editar Gasto' : 'Nuevo Gasto'}
-          </h1>
-          <p className="text-muted-foreground">
-            {isEditing ? 'Modifica los datos del gasto' : 'Registra un nuevo gasto tipo factura'}
-          </p>
-        </div>
-      </div>
+            // If user selects a new file, clear the delete flag and restore preview of existing if editing
+            setShouldDeleteDocument(false);
+            setData('document', file);
+            setFileName(file.name);
 
-      {/* Información General */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Información General</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre del Gasto *</Label>
-              <Input
-                id="name"
-                value={data.name}
-                onChange={(e) => setData('name', e.target.value)}
-                placeholder="Ej: Compra de supermercado"
-              />
-              <InputError message={errors.name} />
-            </div>
+            // Create preview URL
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+        }
+    };
 
-            <div className="space-y-2">
-              <Label htmlFor="expense_date">Fecha *</Label>
-              <Input
-                id="expense_date"
-                type="date"
-                value={data.expense_date}
-                onChange={(e) => setData('expense_date', e.target.value)}
-              />
-              <InputError message={errors.expense_date} />
-            </div>
+    const handleRemoveFile = () => {
+        // If there's a new file selected, just remove it and show existing document
+        if (data.document instanceof File) {
+            setData('document', null);
+            setFileName('');
+            // Revoke blob URL
+            if (previewUrl && previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(previewUrl);
+            }
+            // Clear the file input
+            const fileInput = document.getElementById(
+                'document',
+            ) as HTMLInputElement;
+            if (fileInput) {
+                fileInput.value = '';
+            }
+            // Restore existing document preview if editing
+            if (isEditing && expense?.document_path && !shouldDeleteDocument) {
+                const path = expense.document_path;
+                const imageUrl =
+                    path.startsWith('http://') || path.startsWith('https://')
+                        ? path
+                        : `/storage/${path.startsWith('/') ? path.substring(1) : path}`;
+                setPreviewUrl(imageUrl);
+            }
+        } else {
+            // If showing existing document, mark it for deletion
+            if (isEditing && expense?.document_path) {
+                setShouldDeleteDocument(true);
+            }
+            setData('document', null);
+            setFileName('');
+            // Clear preview URL
+            if (previewUrl) {
+                if (previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(previewUrl);
+                }
+                setPreviewUrl('');
+            }
+            // Clear the file input
+            const fileInput = document.getElementById(
+                'document',
+            ) as HTMLInputElement;
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        }
+    };
 
-            <div className="space-y-2">
-              <Label htmlFor="payment_method_id">Método de Pago *</Label>
-              <Select
-                value={data.payment_method_id}
-                onValueChange={(value) => setData('payment_method_id', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un método" />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentMethods.map((method) => (
-                    <SelectItem key={method.id} value={method.id.toString()}>
-                      {method.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <InputError message={errors.payment_method_id} />
-            </div>
+    const calculateSubtotal = () => {
+        return data.details
+            .filter((detail) => !detail._destroy)
+            .reduce((sum, detail) => {
+                const amount = parseFloat(detail.amount) || 0;
+                const quantity = parseFloat(detail.quantity) || 0;
+                return sum + amount * quantity;
+            }, 0);
+    };
 
-            <div className="space-y-2">
-              <Label htmlFor="discount">Descuento</Label>
-              <Input
-                id="discount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={data.discount}
-                onChange={(e) => setData('discount', e.target.value)}
-                placeholder="0.00"
-                className={discountError ? 'border-red-500 focus-visible:ring-red-500' : ''}
-              />
-              <InputError message={errors.discount || discountError} />
-            </div>
-          </div>
+    const calculateTotal = () => {
+        const subtotal = calculateSubtotal();
+        const discount = parseFloat(data.discount) || 0;
+        return Math.max(0, subtotal - discount);
+    };
 
-          <div className="space-y-2">
-            <Label htmlFor="observation">Observación</Label>
-            <Textarea
-              id="observation"
-              value={data.observation}
-              onChange={(e) => setData('observation', e.target.value)}
-              placeholder="Descripción general (opcional)"
-              rows={3}
-            />
-            <InputError message={errors.observation} />
-          </div>
-        </CardContent>
-      </Card>
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
 
-      {/* Detalles del Gasto */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Detalles del Gasto</CardTitle>
-            <Button type="button" onClick={addDetail} size="sm" variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Agregar Ítem
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {data.details.map((detail, index) => (
-            <Card 
-              key={detail.id || index} 
-              className={detail._destroy ? 'bg-destructive/10 border-destructive/50' : 'bg-muted/30'}
-            >
-              <CardContent className="pt-4">
-                {detail._destroy ? (
-                  // Modo eliminado - Mostrar solo resumen con opción de restaurar
-                  <div className="flex items-center justify-between py-2">
-                    <div className="flex items-center gap-4">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                      <div>
-                        <p className="font-medium text-destructive line-through">{detail.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Este ítem será eliminado al guardar
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => restoreDetail(index)}
-                    >
-                      Restaurar
-                    </Button>
-                  </div>
-                ) : (
-                  // Modo normal - Mostrar campos editables
-                  <div className="space-y-3">
-                    <div className="grid gap-3 md:grid-cols-12">
-                      <div className="md:col-span-4 space-y-1">
-                        <Label className="text-xs">Descripción *</Label>
-                        <Input
-                          value={detail.name}
-                          onChange={(e) => updateDetail(index, 'name', e.target.value)}
-                          placeholder="Nombre del ítem"
-                        />
-                        <InputError message={errors[`details.${index}.name` as keyof typeof errors]} />
-                      </div>
+        // Prevent submission if there's a discount error
+        if (discountError) {
+            return;
+        }
 
-                      <div className="md:col-span-2 space-y-1">
-                        <Label className="text-xs">Categoría *</Label>
-                        <Select
-                          value={detail.category_id}
-                          onValueChange={(value) => updateDetail(index, 'category_id', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Categoría" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category.id} value={category.id.toString()}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <InputError message={errors[`details.${index}.category_id` as keyof typeof errors]} />
-                      </div>
+        // CRITICAL FIX: When updating with a file, use POST with _method: PUT
+        // Inertia.js has known issues with PUT + FormData, so we use POST instead
+        if (isEditing && expense && data.document instanceof File) {
+            // Mark that we're submitting with file
+            setIsSubmittingWithFile(true);
 
-                      <div className="md:col-span-2 space-y-1">
-                        <Label className="text-xs">Cantidad *</Label>
-                        <Input
-                          type="number"
-                          step="1"
-                          min="1"
-                          value={detail.quantity}
-                          onChange={(e) => updateDetail(index, 'quantity', e.target.value)}
-                        />
-                        <InputError message={errors[`details.${index}.quantity` as keyof typeof errors]} />
-                      </div>
+            // Build complete data object - use current data or fallback to expense
+            // Store in ref so transform can access it immediately
+            const completeData = {
+                _method: 'PUT', // Laravel method spoofing for PUT request
+                name: data.name || expense.name,
+                expense_date:
+                    data.expense_date ||
+                    formatDateForInput(expense.expense_date),
+                payment_method_id:
+                    data.payment_method_id ||
+                    expense.payment_method_id.toString(),
+                discount: data.discount || expense.discount.toString(),
+                observation: data.observation ?? expense.observation ?? '',
+                document_number:
+                    data.document_number ?? expense.document_number ?? '',
+                details:
+                    data.details && data.details.length > 0
+                        ? data.details
+                        : expense.expense_details.map((d) => ({
+                              id: d.id,
+                              name: d.name,
+                              amount: d.amount,
+                              quantity: Math.floor(
+                                  parseFloat(d.quantity) || 1,
+                              ).toString(),
+                              observation: d.observation || '',
+                              category_id: d.category_id.toString(),
+                              _destroy: false,
+                          })),
+                document: data.document, // Keep the file
+            };
 
-                      <div className="md:col-span-2 space-y-1">
-                        <Label className="text-xs">Precio Unit. *</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={detail.amount}
-                          onChange={(e) => updateDetail(index, 'amount', e.target.value)}
-                        />
-                        <InputError message={errors[`details.${index}.amount` as keyof typeof errors]} />
-                      </div>
+            // Store in ref BEFORE calling post - transform will use this
+            pendingSubmitData.current = completeData;
 
-                      <div className="md:col-span-1 space-y-1">
-                        <Label className="text-xs">Subtotal</Label>
-                        <Input
-                          value={((parseFloat(detail.amount) || 0) * (parseFloat(detail.quantity) || 0)).toFixed(2)}
-                          readOnly
-                          className="bg-muted font-medium"
-                        />
-                      </div>
+            // Update data state for UI consistency
+            setData(completeData);
 
-                      <div className="md:col-span-1 flex items-end">
-                        {(data.details.filter(d => !d._destroy).length > 1 || !detail.id) && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeDetail(index)}
-                            className="text-destructive hover:text-destructive"
-                            title={detail.id ? 'Marcar para eliminar' : 'Eliminar ítem'}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+            // CRITICAL: Use router.post directly with FormData
+            // Inertia's useForm put() has issues with FormData, so we bypass it
+            // Use Laravel's method spoofing: POST with _method: PUT
+            const formData = new FormData();
 
-                    {/* Observación opcional para cada ítem */}
-                    <div className="space-y-1">
-                      <Label className="text-xs">Observación del ítem</Label>
-                      <Input
-                        value={detail.observation}
-                        onChange={(e) => updateDetail(index, 'observation', e.target.value)}
-                        placeholder="Descripción adicional (opcional)"
-                        className="text-sm"
-                      />
-                      <InputError message={errors[`details.${index}.observation` as keyof typeof errors]} />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+            // Add all fields to FormData explicitly
+            formData.append('_method', 'PUT');
+            formData.append('name', completeData.name);
+            formData.append('expense_date', completeData.expense_date);
+            formData.append(
+                'payment_method_id',
+                completeData.payment_method_id,
+            );
+            formData.append('discount', completeData.discount || '0');
+            // Always append nullable fields (even if empty)
+            formData.append('observation', completeData.observation || '');
+            formData.append(
+                'document_number',
+                completeData.document_number || '',
+            );
+            formData.append('document', completeData.document);
 
-          <div className="flex justify-end pt-4 border-t">
-            <div className="text-right space-y-1">
-              <div className="flex justify-between items-center gap-8 text-sm">
-                <span className="text-muted-foreground">
-                  Subtotal ({data.details.filter(d => !d._destroy).length} ítems)
-                </span>
-                <span className="font-medium">${calculateSubtotal().toFixed(2)}</span>
-              </div>
-              {parseFloat(data.discount) > 0 && (
-                <div className="flex justify-between items-center gap-8 text-sm">
-                  <span className="text-muted-foreground">Descuento</span>
-                  <span className="font-medium text-red-600">-${parseFloat(data.discount).toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center gap-8 pt-2 border-t">
-                <span className="text-sm text-muted-foreground">Total</span>
-                <span className="text-2xl font-bold">${calculateTotal().toFixed(2)}</span>
-              </div>
-              {data.details.some(d => d._destroy) && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {data.details.filter(d => d._destroy).length} ítem(s) marcado(s) para eliminar
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            // Serialize details array for FormData
+            completeData.details.forEach(
+                (detail: ExpenseDetail, index: number) => {
+                    if (detail.id) {
+                        formData.append(
+                            `details[${index}][id]`,
+                            String(detail.id),
+                        );
+                    }
+                    formData.append(`details[${index}][name]`, detail.name);
+                    formData.append(`details[${index}][amount]`, detail.amount);
+                    formData.append(
+                        `details[${index}][quantity]`,
+                        detail.quantity,
+                    );
+                    formData.append(
+                        `details[${index}][category_id]`,
+                        detail.category_id,
+                    );
+                    if (detail.observation) {
+                        formData.append(
+                            `details[${index}][observation]`,
+                            detail.observation,
+                        );
+                    }
+                    formData.append(
+                        `details[${index}][_destroy]`,
+                        detail._destroy ? '1' : '0',
+                    );
+                },
+            );
 
-      {/* Documentación */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Documentación</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="document_number">Número de Documento</Label>
-              <Input
-                id="document_number"
-                value={data.document_number}
-                onChange={(e) => setData('document_number', e.target.value)}
-                placeholder="Ej: FAC-001"
-              />
-              <InputError message={errors.document_number} />
-            </div>
+            // Use router.post directly with FormData
+            router.post(`/expenses/${expense.id}`, formData, {
+                forceFormData: true,
+                onFinish: () => {
+                    setIsSubmittingWithFile(false);
+                    pendingSubmitData.current = null;
+                },
+                onSuccess: () => {
+                    showFlash('success', 'Gasto actualizado exitosamente');
+                },
+                onError: () => {
+                    showFlash('error', 'Error al actualizar el gasto');
+                },
+            });
+            return;
+        }
 
-            <div className="space-y-2">
-              <Label htmlFor="document">Documento (PDF, JPG, PNG)</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="document"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => document.getElementById('document')?.click()}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  {fileName || (expense?.document_path ? 'Cambiar archivo' : 'Seleccionar archivo')}
+        if (isEditing && expense) {
+            // When updating without a file, check if document should be deleted
+            if (shouldDeleteDocument && expense.document_path) {
+                // Need to send delete_document flag - use POST with FormData
+                const formData = new FormData();
+                formData.append('_method', 'PUT');
+                formData.append('name', data.name);
+                // Ensure expense_date is in YYYY-MM-DD format
+                const expenseDate =
+                    data.expense_date ||
+                    formatDateForInput(expense.expense_date);
+                formData.append('expense_date', expenseDate);
+                formData.append('payment_method_id', data.payment_method_id);
+                formData.append('discount', data.discount || '0');
+                formData.append('observation', data.observation || '');
+                formData.append('document_number', data.document_number || '');
+                formData.append('delete_document', '1'); // Signal to delete document
+
+                // Serialize details array
+                data.details.forEach((detail: ExpenseDetail, index: number) => {
+                    if (detail.id) {
+                        formData.append(
+                            `details[${index}][id]`,
+                            String(detail.id),
+                        );
+                    }
+                    formData.append(`details[${index}][name]`, detail.name);
+                    formData.append(`details[${index}][amount]`, detail.amount);
+                    formData.append(
+                        `details[${index}][quantity]`,
+                        detail.quantity,
+                    );
+                    formData.append(
+                        `details[${index}][category_id]`,
+                        detail.category_id,
+                    );
+                    if (detail.observation) {
+                        formData.append(
+                            `details[${index}][observation]`,
+                            detail.observation,
+                        );
+                    }
+                    formData.append(
+                        `details[${index}][_destroy]`,
+                        detail._destroy ? '1' : '0',
+                    );
+                });
+
+                router.post(`/expenses/${expense.id}`, formData, {
+                    forceFormData: true,
+                    onSuccess: () => {
+                        showFlash('success', 'Gasto actualizado exitosamente');
+                    },
+                    onError: () => {
+                        showFlash('error', 'Error al actualizar el gasto');
+                    },
+                });
+            } else {
+                // Normal PUT without file
+                put(`/expenses/${expense.id}`, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        showFlash('success', 'Gasto actualizado exitosamente');
+                    },
+                    onError: () => {
+                        showFlash('error', 'Error al actualizar el gasto');
+                    },
+                });
+            }
+        } else {
+            post('/expenses', {
+                forceFormData: !!data.document, // Force FormData when document is present
+                onSuccess: () => {
+                    showFlash('success', 'Gasto creado exitosamente');
+                },
+                onError: () => {
+                    showFlash('error', 'Error al crear el gasto');
+                },
+            });
+        }
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-6">
+            {/* Header con botón volver */}
+            <div className="flex items-center gap-4">
+                <Button type="button" variant="outline" size="icon" asChild>
+                    <Link href="/expenses">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Link>
                 </Button>
-              </div>
-              {expense?.document_path && !fileName && (
-                <p className="text-sm text-muted-foreground">
-                  Archivo actual: {expense.document_path.split('/').pop()}
-                </p>
-              )}
-              <InputError message={errors.document} />
+                <div>
+                    <h1 className="text-2xl font-bold">
+                        {isEditing ? 'Editar Gasto' : 'Nuevo Gasto'}
+                    </h1>
+                    <p className="text-muted-foreground">
+                        {isEditing
+                            ? 'Modifica los datos del gasto'
+                            : 'Registra un nuevo gasto tipo factura'}
+                    </p>
+                </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Botones de acción */}
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" asChild>
-          <Link href="/expenses">Cancelar</Link>
-        </Button>
-        <Button type="submit" disabled={processing}>
-          {processing ? 'Guardando...' : (isEditing ? 'Actualizar Gasto' : 'Guardar Gasto')}
-        </Button>
-      </div>
-    </form>
-  );
+            {/* Información General */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Información General</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Nombre del Gasto *</Label>
+                            <Input
+                                id="name"
+                                value={data.name}
+                                onChange={(e) =>
+                                    setData('name', e.target.value)
+                                }
+                                placeholder="Ej: Compra de supermercado"
+                            />
+                            <InputError message={errors.name} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="expense_date">Fecha *</Label>
+                            <Input
+                                id="expense_date"
+                                type="date"
+                                value={data.expense_date}
+                                onChange={(e) =>
+                                    setData('expense_date', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.expense_date} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="payment_method_id">
+                                Método de Pago *
+                            </Label>
+                            <Select
+                                value={data.payment_method_id}
+                                onValueChange={(value) =>
+                                    setData('payment_method_id', value)
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona un método" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {paymentMethods.map((method) => (
+                                        <SelectItem
+                                            key={method.id}
+                                            value={method.id.toString()}
+                                        >
+                                            {method.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.payment_method_id} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="discount">Descuento</Label>
+                            <Input
+                                id="discount"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={data.discount}
+                                onChange={(e) =>
+                                    setData('discount', e.target.value)
+                                }
+                                placeholder="0.00"
+                                className={
+                                    discountError
+                                        ? 'border-red-500 focus-visible:ring-red-500'
+                                        : ''
+                                }
+                            />
+                            <InputError
+                                message={errors.discount || discountError}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="observation">Observación</Label>
+                        <Textarea
+                            id="observation"
+                            value={data.observation}
+                            onChange={(e) =>
+                                setData('observation', e.target.value)
+                            }
+                            placeholder="Descripción general (opcional)"
+                            rows={3}
+                        />
+                        <InputError message={errors.observation} />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Detalles del Gasto */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Detalles del Gasto</CardTitle>
+                        <Button
+                            type="button"
+                            onClick={addDetail}
+                            size="sm"
+                            variant="outline"
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Agregar Ítem
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {data.details.map((detail, index) => (
+                        <Card
+                            key={detail.id || index}
+                            className={
+                                detail._destroy
+                                    ? 'border-destructive/50 bg-destructive/10'
+                                    : 'bg-muted/30'
+                            }
+                        >
+                            <CardContent className="pt-4">
+                                {detail._destroy ? (
+                                    // Modo eliminado - Mostrar solo resumen con opción de restaurar
+                                    <div className="flex items-center justify-between py-2">
+                                        <div className="flex items-center gap-4">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                            <div>
+                                                <p className="font-medium text-destructive line-through">
+                                                    {detail.name}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Este ítem será eliminado al
+                                                    guardar
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => restoreDetail(index)}
+                                        >
+                                            Restaurar
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    // Modo normal - Mostrar campos editables
+                                    <div className="space-y-3">
+                                        <div className="grid gap-3 md:grid-cols-12">
+                                            <div className="space-y-1 md:col-span-4">
+                                                <Label className="text-xs">
+                                                    Descripción *
+                                                </Label>
+                                                <Input
+                                                    value={detail.name}
+                                                    onChange={(e) =>
+                                                        updateDetail(
+                                                            index,
+                                                            'name',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Nombre del ítem"
+                                                />
+                                                <InputError
+                                                    message={
+                                                        errors[
+                                                            `details.${index}.name` as keyof typeof errors
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1 md:col-span-2">
+                                                <Label className="text-xs">
+                                                    Categoría *
+                                                </Label>
+                                                <Select
+                                                    value={detail.category_id}
+                                                    onValueChange={(value) =>
+                                                        updateDetail(
+                                                            index,
+                                                            'category_id',
+                                                            value,
+                                                        )
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Categoría" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {categories.map(
+                                                            (category) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        category.id
+                                                                    }
+                                                                    value={category.id.toString()}
+                                                                >
+                                                                    {
+                                                                        category.name
+                                                                    }
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                                <InputError
+                                                    message={
+                                                        errors[
+                                                            `details.${index}.category_id` as keyof typeof errors
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1 md:col-span-2">
+                                                <Label className="text-xs">
+                                                    Cantidad *
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    step="1"
+                                                    min="1"
+                                                    value={Math.floor(
+                                                        parseFloat(
+                                                            detail.quantity,
+                                                        ) || 1,
+                                                    ).toString()}
+                                                    onChange={(e) => {
+                                                        // Only allow integers (no decimals)
+                                                        const value =
+                                                            e.target.value;
+                                                        if (
+                                                            value === '' ||
+                                                            /^\d+$/.test(value)
+                                                        ) {
+                                                            updateDetail(
+                                                                index,
+                                                                'quantity',
+                                                                value,
+                                                            );
+                                                        }
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        // Ensure minimum value of 1 when field loses focus and remove decimals
+                                                        const value =
+                                                            e.target.value;
+                                                        if (
+                                                            value === '' ||
+                                                            parseFloat(value) <
+                                                                1
+                                                        ) {
+                                                            updateDetail(
+                                                                index,
+                                                                'quantity',
+                                                                '1',
+                                                            );
+                                                        } else {
+                                                            // Remove decimals if user entered them
+                                                            const intValue =
+                                                                Math.floor(
+                                                                    parseFloat(
+                                                                        value,
+                                                                    ),
+                                                                );
+                                                            updateDetail(
+                                                                index,
+                                                                'quantity',
+                                                                intValue.toString(),
+                                                            );
+                                                        }
+                                                    }}
+                                                />
+                                                <InputError
+                                                    message={
+                                                        errors[
+                                                            `details.${index}.quantity` as keyof typeof errors
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1 md:col-span-2">
+                                                <Label className="text-xs">
+                                                    Precio Unit. *
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    value={detail.amount}
+                                                    onChange={(e) =>
+                                                        updateDetail(
+                                                            index,
+                                                            'amount',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                <InputError
+                                                    message={
+                                                        errors[
+                                                            `details.${index}.amount` as keyof typeof errors
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1 md:col-span-1">
+                                                <Label className="text-xs">
+                                                    Subtotal
+                                                </Label>
+                                                <Input
+                                                    value={(
+                                                        (parseFloat(
+                                                            detail.amount,
+                                                        ) || 0) *
+                                                        (parseFloat(
+                                                            detail.quantity,
+                                                        ) || 0)
+                                                    ).toFixed(2)}
+                                                    readOnly
+                                                    className="bg-muted font-medium"
+                                                />
+                                            </div>
+
+                                            <div className="flex items-end md:col-span-1">
+                                                {(data.details.filter(
+                                                    (d) => !d._destroy,
+                                                ).length > 1 ||
+                                                    !detail.id) && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            removeDetail(index)
+                                                        }
+                                                        className="text-destructive hover:text-destructive"
+                                                        title={
+                                                            detail.id
+                                                                ? 'Marcar para eliminar'
+                                                                : 'Eliminar ítem'
+                                                        }
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Observación opcional para cada ítem */}
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">
+                                                Observación del ítem
+                                            </Label>
+                                            <Input
+                                                value={detail.observation}
+                                                onChange={(e) =>
+                                                    updateDetail(
+                                                        index,
+                                                        'observation',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Descripción adicional (opcional)"
+                                                className="text-sm"
+                                            />
+                                            <InputError
+                                                message={
+                                                    errors[
+                                                        `details.${index}.observation` as keyof typeof errors
+                                                    ]
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    <div className="flex justify-end border-t pt-4">
+                        <div className="space-y-1 text-right">
+                            <div className="flex items-center justify-between gap-8 text-sm">
+                                <span className="text-muted-foreground">
+                                    Subtotal (
+                                    {
+                                        data.details.filter((d) => !d._destroy)
+                                            .length
+                                    }{' '}
+                                    ítems)
+                                </span>
+                                <span className="font-medium">
+                                    ${calculateSubtotal().toFixed(2)}
+                                </span>
+                            </div>
+                            {parseFloat(data.discount) > 0 && (
+                                <div className="flex items-center justify-between gap-8 text-sm">
+                                    <span className="text-muted-foreground">
+                                        Descuento
+                                    </span>
+                                    <span className="font-medium text-red-600">
+                                        -${parseFloat(data.discount).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between gap-8 border-t pt-2">
+                                <span className="text-sm text-muted-foreground">
+                                    Total
+                                </span>
+                                <span className="text-2xl font-bold">
+                                    ${calculateTotal().toFixed(2)}
+                                </span>
+                            </div>
+                            {data.details.some((d) => d._destroy) && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {
+                                        data.details.filter((d) => d._destroy)
+                                            .length
+                                    }{' '}
+                                    ítem(s) marcado(s) para eliminar
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Documentación */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Documentación</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="document_number">
+                                Número de Documento
+                            </Label>
+                            <Input
+                                id="document_number"
+                                value={data.document_number}
+                                onChange={(e) =>
+                                    setData('document_number', e.target.value)
+                                }
+                                placeholder="Ej: FAC-001"
+                            />
+                            <InputError message={errors.document_number} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="document">
+                                Captura de pantalla (Solo PNG o JPG)
+                            </Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="document"
+                                    type="file"
+                                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={() =>
+                                        document
+                                            .getElementById('document')
+                                            ?.click()
+                                    }
+                                >
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    {fileName ||
+                                        (expense?.document_path &&
+                                        typeof expense.document_path ===
+                                            'string' &&
+                                        expense.document_path.trim() !== ''
+                                            ? 'Cambiar archivo'
+                                            : 'Seleccionar imagen')}
+                                </Button>
+                            </div>
+                            {previewUrl && previewUrl.trim() !== '' && (
+                                <div className="relative mt-4 overflow-hidden rounded-lg border bg-muted">
+                                    <img
+                                        src={previewUrl}
+                                        alt="Preview"
+                                        className="h-auto max-h-96 w-full object-contain"
+                                        onError={(e) => {
+                                            console.error(
+                                                'Error loading image:',
+                                                previewUrl,
+                                            );
+                                            console.error(
+                                                'Image error event:',
+                                                e,
+                                            );
+                                            // Hide preview on error
+                                            setPreviewUrl('');
+                                        }}
+                                        onLoad={() => {
+                                            // Image loaded successfully
+                                        }}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-2 right-2"
+                                        onClick={handleRemoveFile}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            )}
+                            <InputError message={errors.document} />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Botones de acción */}
+            <div className="flex justify-end gap-4">
+                <Button type="button" variant="outline" asChild>
+                    <Link href="/expenses">Cancelar</Link>
+                </Button>
+                <Button type="submit" disabled={processing}>
+                    {processing
+                        ? 'Guardando...'
+                        : isEditing
+                          ? 'Actualizar Gasto'
+                          : 'Guardar Gasto'}
+                </Button>
+            </div>
+        </form>
+    );
 }
-

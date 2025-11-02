@@ -14,16 +14,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Payment Methods CRUD
     Route::resource('payment-methods', App\Http\Controllers\PaymentMethodController::class)
-        ->only(['index', 'store', 'update', 'destroy']);
+        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 
     // Categories CRUD
     Route::resource('categories', App\Http\Controllers\CategoryController::class)
-        ->only(['index', 'store', 'update', 'destroy']);
+        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 
     // Expenses CRUD
     Route::resource('expenses', App\Http\Controllers\ExpenseController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
-    
+
     // Expense Details management (within expense context)
     Route::put('expenses/{expense}/details/{detail}', [App\Http\Controllers\ExpenseController::class, 'updateDetail'])
         ->name('expenses.details.update');

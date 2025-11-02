@@ -24,7 +24,50 @@ class CategoryRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100'],
             'observation' => ['nullable', 'string', 'max:255'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', 'max:50'],
+        ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        // Convert tags string to array for validation and storage
+        // Input: "chile, jesus, deuda" -> Output: ["chile", "jesus", "deuda"]
+        if ($this->has('tags')) {
+            if (is_string($this->tags)) {
+                $tagsArray = array_filter(
+                    array_map('trim', explode(',', $this->tags)),
+                    fn ($tag) => ! empty($tag)
+                );
+
+                $this->merge([
+                    'tags' => ! empty($tagsArray) ? $tagsArray : null,
+                ]);
+            } elseif (empty($this->tags)) {
+                $this->merge([
+                    'tags' => null,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre de la categoría es obligatorio.',
+            'name.max' => 'El nombre no puede tener más de 100 caracteres.',
+            'observation.max' => 'La observación no puede tener más de 255 caracteres.',
+            'tags.array' => 'Las etiquetas deben ser un arreglo válido.',
+            'tags.*.string' => 'Cada etiqueta debe ser texto.',
+            'tags.*.max' => 'Cada etiqueta no puede tener más de 50 caracteres.',
         ];
     }
 }
-

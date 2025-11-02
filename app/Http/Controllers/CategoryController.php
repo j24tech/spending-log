@@ -24,13 +24,31 @@ class CategoryController extends Controller
     }
 
     /**
+     * Show the form for creating a new resource.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('categories/create');
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(CategoryRequest $request): RedirectResponse
     {
         Category::create($request->validated());
 
-        return to_route('categories.index')->with('success', 'Categoría creada exitosamente');
+        return to_route('categories.index');
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Category $category): Response
+    {
+        return Inertia::render('categories/edit', [
+            'category' => $category,
+        ]);
     }
 
     /**
@@ -40,7 +58,7 @@ class CategoryController extends Controller
     {
         $category->update($request->validated());
 
-        return to_route('categories.index')->with('success', 'Categoría actualizada exitosamente');
+        return to_route('categories.index');
     }
 
     /**
@@ -50,7 +68,6 @@ class CategoryController extends Controller
     {
         $category->delete();
 
-        return to_route('categories.index')->with('success', 'Categoría eliminada exitosamente');
+        return to_route('categories.index');
     }
 }
-

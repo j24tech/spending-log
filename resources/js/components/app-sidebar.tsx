@@ -13,13 +13,13 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { 
-    BookOpen, 
-    Folder, 
-    LayoutGrid, 
-    Wallet, 
-    Tag, 
-    Receipt 
+import {
+    BookOpen,
+    Folder,
+    LayoutGrid,
+    Receipt,
+    Tag,
+    Wallet,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 

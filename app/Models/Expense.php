@@ -59,8 +59,7 @@ class Expense extends Model
         $subtotal = $this->expenseDetails->sum(function ($detail) {
             return $detail->amount * $detail->quantity;
         });
-        
+
         return max(0, $subtotal - ($this->discount ?? 0));
     }
 }
-

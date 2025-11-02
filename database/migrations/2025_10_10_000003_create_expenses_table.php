@@ -18,15 +18,15 @@ return new class extends Migration
             $table->string('observation', 255)->nullable();
             $table->string('document_number', 50)->nullable();
             $table->string('document_path', 2048)->nullable();
-            
+
             // Foreign keys
             $table->foreignId('payment_method_id')
                 ->constrained('payment_methods')
                 ->onUpdate('cascade')
                 ->onDelete('restrict');
-            
+
             $table->timestamps();
-            
+
             // Indexes
             $table->index('expense_date', 'idx_expenses_date');
             $table->index('payment_method_id', 'idx_expenses_payment_method');
@@ -42,4 +42,3 @@ return new class extends Migration
         Schema::dropIfExists('expenses');
     }
 };
-

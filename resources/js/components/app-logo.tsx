@@ -3,14 +3,17 @@ import { useSidebar } from '@/components/ui/sidebar';
 export default function AppLogo() {
     const { state } = useSidebar();
     const isCollapsed = state === 'collapsed';
+    const logoClassName = isCollapsed
+        ? 'h-8 w-auto object-contain'
+        : 'h-10 w-auto object-contain';
 
     return (
         <>
-            <div className="flex items-center justify-center min-w-[40px]">
-                <img 
-                    src="/logo.png" 
-                    alt="Registro de Gastos" 
-                    className="h-10 w-auto object-contain"
+            <div className="flex min-w-[40px] items-center justify-center">
+                <img
+                    src="/logo.png"
+                    alt="Registro de Gastos"
+                    className={logoClassName}
                 />
             </div>
             {!isCollapsed && (

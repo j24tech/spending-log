@@ -18,6 +18,11 @@ class Category extends Model
     protected $fillable = [
         'name',
         'observation',
+        'tags',
+    ];
+
+    protected $casts = [
+        'tags' => 'array',
     ];
 
     /**
@@ -28,4 +33,3 @@ class Category extends Model
         return $this->hasMany(ExpenseDetail::class);
     }
 }
-

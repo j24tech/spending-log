@@ -63,6 +63,23 @@ Bienvenido a la documentación completa de Spending Log. Aquí encontrarás toda
 
 ---
 
+## 🔌 API REST
+
+**[Documentación de la API](API_DOCUMENTATION.md)** 🌐
+- Endpoints disponibles
+- Autenticación con Sanctum
+- Modelos de datos
+- Ejemplos en JavaScript, Python, PHP
+- Códigos de error
+- Rate limiting
+
+**[Inicio Rápido de la API](API_QUICK_START.md)** ⚡
+- Generar token en 1 minuto
+- Hacer primera petición
+- Ejemplos básicos
+
+---
+
 ## 📋 Resúmenes Técnicos
 
 **[Resumen de Implementación](RESUMEN_IMPLEMENTACION.md)** 📊
@@ -109,6 +126,12 @@ Bienvenido a la documentación completa de Spending Log. Aquí encontrarás toda
 - [Comandos CLI](ADMIN_USER_MANAGEMENT.md) - Terminal
 - [Quick Start Admin](QUICK_START_ADMIN.md) - Comandos básicos
 
+### API REST
+- [Documentación de API](API_DOCUMENTATION.md) - Completa
+- [API Quick Start](API_QUICK_START.md) - Inicio en 3 pasos
+- [Resumen de API](API_RESUMEN.md) - Implementación
+- [Postman Collection](postman_collection.json) - Testing
+
 ### Desarrollo
 - [Testing](TESTING.md) - Guía de tests
 - [Resumen de Implementación](RESUMEN_IMPLEMENTACION.md) - Técnico
@@ -129,6 +152,8 @@ Bienvenido a la documentación completa de Spending Log. Aquí encontrarás toda
 | Crear el primer admin | [QUICK_START_ADMIN.md](QUICK_START_ADMIN.md) |
 | Gestionar usuarios (web) | [ADMIN_MODULE_GUIDE.md](ADMIN_MODULE_GUIDE.md) |
 | Gestionar usuarios (CLI) | [ADMIN_USER_MANAGEMENT.md](ADMIN_USER_MANAGEMENT.md) |
+| Usar la API REST | [API_DOCUMENTATION.md](API_DOCUMENTATION.md) |
+| API en 3 pasos | [API_QUICK_START.md](API_QUICK_START.md) |
 | Ver todo implementado | [RESUMEN_IMPLEMENTACION.md](RESUMEN_IMPLEMENTACION.md) |
 | Desplegar a producción | [DEPLOYMENT.md](DEPLOYMENT.md) |
 | Ejecutar tests | [TESTING.md](TESTING.md) |

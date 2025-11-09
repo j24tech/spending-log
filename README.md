@@ -42,6 +42,14 @@ Sistema completo de gestión de gastos con autenticación Google OAuth y panel d
 - ✅ **Componentes reutilizables** - Arquitectura limpia
 - ✅ **Accesibilidad** - ARIA labels y navegación por teclado
 
+### 🔌 API REST
+- ✅ **Laravel Sanctum** - Autenticación con tokens
+- ✅ **Endpoints RESTful** - Listar y ver gastos
+- ✅ **Actualización limitada** - Solo documento y número de documento
+- ✅ **Estadísticas** - Métricas de gastos
+- ✅ **Rate limiting** - 60 peticiones/minuto
+- ✅ **Documentación completa** - Con ejemplos en múltiples lenguajes
+
 ---
 
 ## 🚀 Stack Tecnológico
@@ -51,6 +59,7 @@ Sistema completo de gestión de gastos con autenticación Google OAuth y panel d
 - **PHP 8.2+** - Última versión de PHP
 - **SQLite/MySQL** - Base de datos
 - **Laravel Socialite** - Autenticación OAuth
+- **Laravel Sanctum** - API Authentication
 - **Laravel Fortify** - Two-Factor Authentication
 - **Pest PHP** - Testing framework
 
@@ -329,8 +338,12 @@ spending-log/
 | [`GOOGLE_OAUTH_SETUP.md`](docs/GOOGLE_OAUTH_SETUP.md) | 🔐 Configuración de Google OAuth paso a paso |
 | [`ADMIN_MODULE_GUIDE.md`](docs/ADMIN_MODULE_GUIDE.md) | 👥 Guía del módulo de administración web |
 | [`ADMIN_USER_MANAGEMENT.md`](docs/ADMIN_USER_MANAGEMENT.md) | 💻 Comandos CLI para gestión de usuarios |
+| [`API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md) | 🔌 Documentación completa de la API REST |
+| [`API_QUICK_START.md`](docs/API_QUICK_START.md) | ⚡ API en 3 pasos |
 | [`RESUMEN_IMPLEMENTACION.md`](docs/RESUMEN_IMPLEMENTACION.md) | 📋 Resumen técnico completo |
 | [`QUICK_START_ADMIN.md`](docs/QUICK_START_ADMIN.md) | ⚡ Comandos básicos de administración |
+| [`TESTING.md`](docs/TESTING.md) | 🧪 Guía de testing |
+| [`DEPLOYMENT.md`](docs/DEPLOYMENT.md) | 🚀 Guía de deployment |
 
 ---
 
@@ -701,11 +714,12 @@ Si tienes problemas o preguntas:
 
 ### Próximas Características
 
+- [x] **API REST para integraciones** ✅ Implementada
 - [ ] Dashboard con gráficas de gastos
 - [ ] Exportar gastos a PDF/Excel
 - [ ] Reportes mensuales/anuales
 - [ ] Categorías personalizadas por usuario
-- [ ] API REST para integraciones
+- [ ] API REST completa (crear/eliminar gastos)
 - [ ] App móvil (React Native)
 - [ ] Notificaciones por email
 - [ ] Multi-moneda

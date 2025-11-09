@@ -13,16 +13,19 @@ Route::middleware('auth')->group(function () {
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
+    // Password - Solo para usuarios no-Google
+    Route::middleware('not.google')->group(function () {
+        Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
 
-    Route::put('settings/password', [PasswordController::class, 'update'])
-        ->middleware('throttle:6,1')
-        ->name('password.update');
+        Route::put('settings/password', [PasswordController::class, 'update'])
+            ->middleware('throttle:6,1')
+            ->name('password.update');
+
+        Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
+            ->name('two-factor.show');
+    });
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
     })->name('appearance.edit');
-
-    Route::get('settings/two-factor', [TwoFactorAuthenticationController::class, 'show'])
-        ->name('two-factor.show');
 });

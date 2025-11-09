@@ -29,6 +29,7 @@ export default function Profile({
     status?: string;
 }) {
     const { auth } = usePage<SharedData>().props;
+    const usesGoogleAuth = !!auth.user?.google_id;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -36,6 +37,33 @@ export default function Profile({
 
             <SettingsLayout>
                 <div className="space-y-6">
+                    {/* Info para usuarios de Google OAuth */}
+                    {usesGoogleAuth && (
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
+                            <div className="flex gap-3">
+                                <svg
+                                    className="mt-0.5 h-5 w-5 shrink-0"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                >
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 16v-4M12 8h.01" />
+                                </svg>
+                                <div className="flex-1 space-y-1">
+                                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                        Autenticación con Google
+                                    </p>
+                                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                                        Usas Google para iniciar sesión. La configuración de contraseña 
+                                        y autenticación de dos factores se gestiona a través de tu cuenta de Google.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <HeadingSmall
                         title="Profile information"
                         description="Update your name and email address"

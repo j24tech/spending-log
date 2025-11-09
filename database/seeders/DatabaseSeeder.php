@@ -23,15 +23,20 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Test User',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
+                'authorized' => true,
+                'is_admin' => false,
             ]
         );
 
+        // Administrador principal - Solo Google OAuth
         $user = User::firstOrCreate(
             ['email' => 'jesusdasilva@gmail.com'],
             [
                 'name' => 'Jesus da Silva',
-                'password' => Hash::make('12345678'),
+                'password' => null, // Solo Google OAuth
                 'email_verified_at' => now(),
+                'authorized' => true,
+                'is_admin' => true,
             ]
         );
 

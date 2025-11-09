@@ -6,34 +6,53 @@ import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editPassword } from '@/routes/password';
 import { edit } from '@/routes/profile';
 import { show } from '@/routes/two-factor';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
-import { type PropsWithChildren } from 'react';
-
-const sidebarNavItems: NavItem[] = [
-    {
-        title: 'Profile',
-        href: edit(),
-        icon: null,
-    },
-    {
-        title: 'Password',
-        href: editPassword(),
-        icon: null,
-    },
-    {
-        title: 'Two-Factor Auth',
-        href: show(),
-        icon: null,
-    },
-    {
-        title: 'Appearance',
-        href: editAppearance(),
-        icon: null,
-    },
-];
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { type PropsWithChildren, useMemo } from 'react';
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
+    const { auth } = usePage<SharedData>().props;
+    const user = auth.user;
+
+    // Verificar si el usuario usa Google OAuth (no necesita password ni 2FA)
+    const usesGoogleAuth = !!user?.google_id;
+
+    // Filtrar items del menú basado en el tipo de autenticación
+    const sidebarNavItems: NavItem[] = useMemo(() => {
+        const baseItems: NavItem[] = [
+            {
+                title: 'Profile',
+                href: edit(),
+                icon: null,
+            },
+        ];
+
+        // Solo mostrar Password y Two-Factor para usuarios tradicionales
+        if (!usesGoogleAuth) {
+            baseItems.push(
+                {
+                    title: 'Password',
+                    href: editPassword(),
+                    icon: null,
+                },
+                {
+                    title: 'Two-Factor Auth',
+                    href: show(),
+                    icon: null,
+                },
+            );
+        }
+
+        // Appearance siempre disponible
+        baseItems.push({
+            title: 'Appearance',
+            href: editAppearance(),
+            icon: null,
+        });
+
+        return baseItems;
+    }, [usesGoogleAuth]);
+
     // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
         return null;

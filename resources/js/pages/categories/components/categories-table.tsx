@@ -61,16 +61,19 @@ export function CategoriesTable({ data }: Props) {
                                             {category.observation || '-'}
                                         </TableCell>
                                         <TableCell>
-                                            {category.tags && category.tags.length > 0 ? (
+                                            {category.tags &&
+                                            category.tags.length > 0 ? (
                                                 <div className="flex flex-wrap gap-1">
-                                                    {category.tags.map((tag, index) => (
-                                                        <Badge
-                                                            key={index}
-                                                            variant="secondary"
-                                                        >
-                                                            {tag}
-                                                        </Badge>
-                                                    ))}
+                                                    {category.tags.map(
+                                                        (tag, index) => (
+                                                            <Badge
+                                                                key={index}
+                                                                variant="secondary"
+                                                            >
+                                                                {tag}
+                                                            </Badge>
+                                                        ),
+                                                    )}
                                                 </div>
                                             ) : (
                                                 '-'

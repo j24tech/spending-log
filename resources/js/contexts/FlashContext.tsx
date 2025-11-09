@@ -1,10 +1,5 @@
 import { toast } from '@/hooks/use-toast';
-import {
-    createContext,
-    ReactNode,
-    useCallback,
-    useContext,
-} from 'react';
+import { createContext, ReactNode, useCallback, useContext } from 'react';
 
 interface FlashContextType {
     showFlash: (type: 'success' | 'error' | 'info', message: string) => void;

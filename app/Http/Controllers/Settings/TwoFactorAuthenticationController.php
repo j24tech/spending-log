@@ -17,9 +17,13 @@ class TwoFactorAuthenticationController extends Controller implements HasMiddlew
      */
     public static function middleware(): array
     {
-        return Features::optionEnabled(Features::twoFactorAuthentication(), 'confirmPassword')
-            ? [new Middleware('password.confirm', only: ['show'])]
-            : [];
+        $middleware = ['not.google'];
+
+        if (Features::optionEnabled(Features::twoFactorAuthentication(), 'confirmPassword')) {
+            $middleware[] = new Middleware('password.confirm', only: ['show']);
+        }
+
+        return $middleware;
     }
 
     /**

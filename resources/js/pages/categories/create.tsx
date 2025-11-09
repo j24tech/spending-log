@@ -53,19 +53,26 @@ export default function CreateCategory() {
                                         }
                                         placeholder="Alimentación, Transporte, etc."
                                         className={
-                                            errors.name ? 'border-destructive' : ''
+                                            errors.name
+                                                ? 'border-destructive'
+                                                : ''
                                         }
                                     />
                                     <InputError message={errors.name} />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="observation">Observación</Label>
+                                    <Label htmlFor="observation">
+                                        Observación
+                                    </Label>
                                     <Textarea
                                         id="observation"
                                         value={data.observation}
                                         onChange={(e) =>
-                                            setData('observation', e.target.value)
+                                            setData(
+                                                'observation',
+                                                e.target.value,
+                                            )
                                         }
                                         placeholder="Descripción adicional (opcional)"
                                         className={
@@ -87,7 +94,9 @@ export default function CreateCategory() {
                                         }
                                         placeholder="comida, bebida, snacks"
                                         className={
-                                            errors.tags ? 'border-destructive' : ''
+                                            errors.tags
+                                                ? 'border-destructive'
+                                                : ''
                                         }
                                     />
                                     <p className="text-sm text-muted-foreground">
@@ -112,4 +121,3 @@ export default function CreateCategory() {
         </AppLayout>
     );
 }
-

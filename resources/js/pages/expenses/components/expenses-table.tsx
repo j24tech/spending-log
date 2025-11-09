@@ -273,6 +273,7 @@ export function ExpensesTable({ data, categories }: Props) {
                                                                                         {
                                                                                             detail.observation
                                                                                         }
+
                                                                                         )
                                                                                     </span>
                                                                                 )}

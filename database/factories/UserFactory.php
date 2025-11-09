@@ -32,6 +32,10 @@ class UserFactory extends Factory
             'two_factor_secret' => Str::random(10),
             'two_factor_recovery_codes' => Str::random(10),
             'two_factor_confirmed_at' => now(),
+            'google_id' => null,
+            'avatar' => null,
+            'authorized' => true, // Por defecto, usuarios de test están autorizados
+            'is_admin' => false, // Por defecto, no son administradores
         ];
     }
 
@@ -54,6 +58,39 @@ class UserFactory extends Factory
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is not authorized.
+     */
+    public function unauthorized(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'authorized' => false,
+        ]);
+    }
+
+    /**
+     * Indicate that the user has Google OAuth configured.
+     */
+    public function withGoogle(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'google_id' => fake()->numerify('####################'),
+            'avatar' => fake()->imageUrl(),
+            'password' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is an administrator.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'authorized' => true,
         ]);
     }
 }

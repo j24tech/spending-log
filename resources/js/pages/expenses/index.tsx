@@ -18,11 +18,26 @@ interface ExpenseDetail {
     quantity: string;
     observation: string | null;
     category: Category;
+    category_id: number;
 }
 
 interface PaymentMethod {
     id: number;
     name: string;
+}
+
+interface Discount {
+    id: number;
+    name: string;
+    observation: string | null;
+}
+
+interface ExpenseDiscount {
+    id: number;
+    discount_id: number;
+    observation: string | null;
+    discount_amount: string;
+    discount: Discount;
 }
 
 interface Expense {
@@ -32,8 +47,10 @@ interface Expense {
     observation: string | null;
     document_number: string | null;
     document_path: string | null;
+    tags: string[] | null;
     payment_method_id: number;
     expense_details: ExpenseDetail[];
+    expense_discounts?: ExpenseDiscount[];
     payment_method: PaymentMethod;
     total: number;
     created_at: string;

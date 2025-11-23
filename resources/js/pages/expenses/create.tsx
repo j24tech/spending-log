@@ -12,12 +12,23 @@ interface PaymentMethod {
     name: string;
 }
 
+interface Discount {
+    id: number;
+    name: string;
+    observation: string | null;
+}
+
 interface Props {
     categories: Category[];
     paymentMethods: PaymentMethod[];
+    discounts: Discount[];
 }
 
-export default function CreateExpense({ categories, paymentMethods }: Props) {
+export default function CreateExpense({
+    categories,
+    paymentMethods,
+    discounts,
+}: Props) {
     return (
         <AppLayout>
             <Head title="Nuevo Gasto" />
@@ -27,6 +38,7 @@ export default function CreateExpense({ categories, paymentMethods }: Props) {
                     <ExpenseForm
                         categories={categories}
                         paymentMethods={paymentMethods}
+                        discounts={discounts}
                     />
                 </div>
             </div>

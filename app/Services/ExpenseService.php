@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Expense;
 use App\Models\ExpenseDetail;
+use App\Models\ExpenseDiscount;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -32,13 +33,15 @@ class ExpenseService
                 'document_number' => $data['document_number'] ?? null,
                 'document_path' => $data['document_path'] ?? null,
                 'payment_method_id' => $data['payment_method_id'],
-                'discount' => $data['discount'] ?? 0,
             ]);
 
             // Create expense details
             $this->createExpenseDetails($expense, $data['details'] ?? []);
 
-            return $expense->fresh(['expenseDetails.category', 'paymentMethod']);
+            // Create expense discounts
+            $this->createExpenseDiscounts($expense, $data['expense_discounts'] ?? []);
+
+            return $expense->fresh(['expenseDetails.category', 'paymentMethod', 'expenseDiscounts.discount']);
         });
     }
 
@@ -90,13 +93,15 @@ class ExpenseService
                 'document_number' => $data['document_number'] ?? null,
                 'document_path' => $documentPath, // Explicitly null if deleted, new path if uploaded, or existing if no change
                 'payment_method_id' => $data['payment_method_id'],
-                'discount' => $data['discount'] ?? 0,
             ]);
 
             // Update expense details
             $this->updateExpenseDetails($expense, $data['details'] ?? []);
 
-            return $expense->fresh(['expenseDetails.category', 'paymentMethod']);
+            // Update expense discounts
+            $this->updateExpenseDiscounts($expense, $data['expense_discounts'] ?? []);
+
+            return $expense->fresh(['expenseDetails.category', 'paymentMethod', 'expenseDiscounts.discount']);
         });
     }
 
@@ -208,6 +213,83 @@ class ExpenseService
     {
         if ($path) {
             Storage::disk('public')->delete($path);
+        }
+    }
+
+    /**
+     * Create expense discounts for an expense.
+     *
+     * @param  array<int, array<string, mixed>>  $discounts
+     */
+    protected function createExpenseDiscounts(Expense $expense, array $discounts): void
+    {
+        foreach ($discounts as $discount) {
+            // Skip discounts marked for deletion
+            if (isset($discount['_destroy']) && $discount['_destroy']) {
+                continue;
+            }
+
+            $expense->expenseDiscounts()->create([
+                'discount_id' => $discount['discount_id'],
+                'observation' => $discount['observation'] ?? null,
+                'discount_amount' => $discount['discount_amount'],
+            ]);
+        }
+    }
+
+    /**
+     * Update expense discounts for an expense.
+     *
+     * @param  array<int, array<string, mixed>>  $discounts
+     */
+    protected function updateExpenseDiscounts(Expense $expense, array $discounts): void
+    {
+        $existingDiscountIds = $expense->expenseDiscounts()->pluck('id')->toArray();
+        $processedIds = [];
+
+        foreach ($discounts as $discount) {
+            // Skip discounts marked for deletion
+            if (isset($discount['_destroy']) && $discount['_destroy']) {
+                if (isset($discount['id'])) {
+                    ExpenseDiscount::where('id', $discount['id'])
+                        ->where('expense_id', $expense->id)
+                        ->delete();
+                }
+
+                continue;
+            }
+
+            if (isset($discount['id'])) {
+                // Update existing discount
+                $existingDiscount = ExpenseDiscount::where('id', $discount['id'])
+                    ->where('expense_id', $expense->id)
+                    ->first();
+
+                if ($existingDiscount) {
+                    $existingDiscount->update([
+                        'discount_id' => $discount['discount_id'],
+                        'observation' => $discount['observation'] ?? null,
+                        'discount_amount' => $discount['discount_amount'],
+                    ]);
+                    $processedIds[] = $discount['id'];
+                }
+            } else {
+                // Create new discount
+                $newDiscount = $expense->expenseDiscounts()->create([
+                    'discount_id' => $discount['discount_id'],
+                    'observation' => $discount['observation'] ?? null,
+                    'discount_amount' => $discount['discount_amount'],
+                ]);
+                $processedIds[] = $newDiscount->id;
+            }
+        }
+
+        // Delete discounts that were not in the submitted data
+        $discountsToDelete = array_diff($existingDiscountIds, $processedIds);
+        if (! empty($discountsToDelete)) {
+            ExpenseDiscount::whereIn('id', $discountsToDelete)
+                ->where('expense_id', $expense->id)
+                ->delete();
         }
     }
 }

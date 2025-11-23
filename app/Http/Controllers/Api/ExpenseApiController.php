@@ -18,7 +18,7 @@ class ExpenseApiController extends Controller
     {
         $perPage = $request->input('per_page', 15);
 
-        $expenses = Expense::with(['paymentMethod', 'expenseDetails.category'])
+        $expenses = Expense::with(['paymentMethod', 'expenseDetails.category', 'expenseDiscounts.discount'])
             ->latest()
             ->paginate($perPage);
 
@@ -30,7 +30,7 @@ class ExpenseApiController extends Controller
      */
     public function show(Expense $expense): JsonResponse
     {
-        $expense->load(['paymentMethod', 'expenseDetails.category']);
+        $expense->load(['paymentMethod', 'expenseDetails.category', 'expenseDiscounts.discount']);
 
         return response()->json([
             'data' => $expense,
@@ -77,7 +77,7 @@ class ExpenseApiController extends Controller
             $expense->save();
         }
 
-        $expense->load(['paymentMethod', 'expenseDetails.category']);
+        $expense->load(['paymentMethod', 'expenseDetails.category', 'expenseDiscounts.discount']);
 
         return response()->json([
             'message' => 'Gasto actualizado exitosamente',
@@ -91,14 +91,16 @@ class ExpenseApiController extends Controller
     public function statistics(): JsonResponse
     {
         $totalExpenses = Expense::count();
-        $totalAmount = Expense::with('expenseDetails')
+        $totalAmount = Expense::with(['expenseDetails', 'expenseDiscounts'])
             ->get()
             ->sum(function ($expense) {
                 $subtotal = $expense->expenseDetails->sum(function ($detail) {
                     return $detail->amount * $detail->quantity;
                 });
 
-                return $subtotal - $expense->discount;
+                $totalDiscounts = $expense->expenseDiscounts->sum('discount_amount');
+
+                return $subtotal - $totalDiscounts;
             });
 
         $thisMonthExpenses = Expense::whereYear('expense_date', now()->year)

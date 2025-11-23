@@ -20,6 +20,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('categories', App\Http\Controllers\CategoryController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 
+    // Discounts CRUD
+    Route::resource('discounts', App\Http\Controllers\DiscountController::class)
+        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+
     // Expenses CRUD
     Route::resource('expenses', App\Http\Controllers\ExpenseController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);

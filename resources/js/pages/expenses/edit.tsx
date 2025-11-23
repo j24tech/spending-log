@@ -32,16 +32,24 @@ interface Expense {
     expense_details: ExpenseDetail[];
 }
 
+interface Discount {
+    id: number;
+    name: string;
+    observation: string | null;
+}
+
 interface Props {
     expense: Expense;
     categories: Category[];
     paymentMethods: PaymentMethod[];
+    discounts: Discount[];
 }
 
 export default function EditExpense({
     expense,
     categories,
     paymentMethods,
+    discounts,
 }: Props) {
     return (
         <AppLayout>
@@ -53,6 +61,7 @@ export default function EditExpense({
                         expense={expense}
                         categories={categories}
                         paymentMethods={paymentMethods}
+                        discounts={discounts}
                     />
                 </div>
             </div>

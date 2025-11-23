@@ -52,7 +52,6 @@ test('puede crear un gasto con datos válidos', function () {
         'name' => 'Gasto de prueba',
         'expense_date' => now()->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => '10.50',
         'observation' => 'Observación de prueba',
         'document_number' => 'DOC-12345',
         'details' => [
@@ -75,7 +74,6 @@ test('puede crear un gasto con datos válidos', function () {
         'name' => 'Gasto de prueba',
         'expense_date' => now()->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => 10.50,
         'observation' => 'Observación de prueba',
         'document_number' => 'DOC-12345',
     ]);
@@ -95,15 +93,15 @@ test('no puede crear un gasto sin datos requeridos', function () {
     $response->assertSessionHasErrors(['name', 'expense_date', 'payment_method_id', 'details']);
 });
 
-test('no puede crear un gasto con descuento mayor al subtotal', function () {
+test('no puede crear un gasto con descuentos aplicados mayor al subtotal', function () {
     $category = Category::factory()->create();
     $paymentMethod = PaymentMethod::factory()->create();
+    $discount = \App\Models\Discount::factory()->create();
 
     $expenseData = [
         'name' => 'Gasto de prueba',
         'expense_date' => now()->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => '1000.00', // Descuento mayor al subtotal
         'details' => [
             [
                 'name' => 'Detalle 1',
@@ -112,11 +110,17 @@ test('no puede crear un gasto con descuento mayor al subtotal', function () {
                 'category_id' => $category->id,
             ],
         ],
+        'expense_discounts' => [
+            [
+                'discount_id' => $discount->id,
+                'discount_amount' => '1000.00', // Descuento mayor al subtotal
+            ],
+        ],
     ];
 
     $response = $this->actingAs($this->user)->post('/expenses', $expenseData);
 
-    $response->assertSessionHasErrors(['discount']);
+    $response->assertSessionHasErrors(['expense_discounts']);
 });
 
 test('puede crear un gasto con documento adjunto', function () {
@@ -129,7 +133,6 @@ test('puede crear un gasto con documento adjunto', function () {
         'name' => 'Gasto con documento',
         'expense_date' => now()->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => '0',
         'document' => $file,
         'details' => [
             [
@@ -181,7 +184,6 @@ test('puede actualizar un gasto con datos válidos', function () {
         'name' => 'Gasto actualizado',
         'expense_date' => now()->addDay()->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => '5.00',
         'observation' => 'Observación actualizada',
         'details' => [
             [
@@ -202,7 +204,6 @@ test('puede actualizar un gasto con datos válidos', function () {
     $this->assertDatabaseHas('expenses', [
         'id' => $expense->id,
         'name' => 'Gasto actualizado',
-        'discount' => 5.00,
         'observation' => 'Observación actualizada',
     ]);
 });
@@ -219,7 +220,6 @@ test('puede actualizar un gasto y agregar nuevos detalles', function () {
         'name' => $expense->name,
         'expense_date' => $expense->expense_date->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => '0',
         'details' => [
             [
                 'id' => $expense->expenseDetails->first()->id,
@@ -261,7 +261,6 @@ test('puede actualizar un gasto y eliminar detalles', function () {
         'name' => $expense->name,
         'expense_date' => $expense->expense_date->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => '0',
         'details' => [
             [
                 'id' => $detailToKeep->id,
@@ -320,7 +319,6 @@ test('no puede crear un gasto sin al menos un detalle', function () {
         'name' => 'Gasto sin detalles',
         'expense_date' => now()->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => '0',
         'details' => [],
     ];
 
@@ -337,7 +335,6 @@ test('no puede crear un gasto con cantidad menor a 1', function () {
         'name' => 'Gasto de prueba',
         'expense_date' => now()->format('Y-m-d'),
         'payment_method_id' => $paymentMethod->id,
-        'discount' => '0',
         'details' => [
             [
                 'name' => 'Detalle 1',

@@ -23,7 +23,7 @@ class Expense extends Model
         'document_number',
         'document_path',
         'payment_method_id',
-        'discount',
+        'tags',
     ];
 
     /**
@@ -33,6 +33,7 @@ class Expense extends Model
      */
     protected $casts = [
         'expense_date' => 'date:Y-m-d',
+        'tags' => 'array',
     ];
 
     /**
@@ -44,6 +45,14 @@ class Expense extends Model
     }
 
     /**
+     * Get the expense discounts for the expense.
+     */
+    public function expenseDiscounts(): HasMany
+    {
+        return $this->hasMany(ExpenseDiscount::class);
+    }
+
+    /**
      * Get the payment method that owns the expense.
      */
     public function paymentMethod(): BelongsTo
@@ -52,7 +61,7 @@ class Expense extends Model
     }
 
     /**
-     * Get the total amount of the expense (subtotal - discount).
+     * Get the total amount of the expense (subtotal - all discounts).
      */
     public function getTotalAttribute(): float
     {
@@ -60,6 +69,17 @@ class Expense extends Model
             return $detail->amount * $detail->quantity;
         });
 
-        return max(0, $subtotal - ($this->discount ?? 0));
+        // Sumar todos los descuentos aplicados
+        $totalDiscounts = $this->expenseDiscounts->sum('discount_amount');
+
+        return max(0, $subtotal - $totalDiscounts);
+    }
+
+    /**
+     * Get the total discounts amount.
+     */
+    public function getTotalDiscountsAttribute(): float
+    {
+        return $this->expenseDiscounts->sum('discount_amount');
     }
 }

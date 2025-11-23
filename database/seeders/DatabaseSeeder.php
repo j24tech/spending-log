@@ -89,7 +89,6 @@ class DatabaseSeeder extends Seeder
                     'document_number' => $i < 2 ? 'DOC-'.str_pad($i + 1, 3, '0', STR_PAD_LEFT) : null,
                     'document_path' => null,
                     'payment_method_id' => $samplePaymentMethods->random()->id,
-                    'discount' => $i % 3 === 0 ? (float) rand(5, 20) : 0.00,
                 ]);
 
                 // Create expense details for each expense

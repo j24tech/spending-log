@@ -17,6 +17,7 @@ import {
     BookOpen,
     Folder,
     LayoutGrid,
+    Percent,
     Receipt,
     Shield,
     Tag,
@@ -44,6 +45,11 @@ const mainNavItems: NavItem[] = [
         title: 'Métodos de Pago',
         href: '/payment-methods',
         icon: Wallet,
+    },
+    {
+        title: 'Tipos de Descuentos',
+        href: '/discounts',
+        icon: Percent,
     },
 ];
 

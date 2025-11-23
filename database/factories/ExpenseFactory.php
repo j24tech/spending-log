@@ -24,7 +24,6 @@ class ExpenseFactory extends Factory
             'document_number' => fake()->optional()->numerify('DOC-#####'),
             'document_path' => null,
             'payment_method_id' => PaymentMethod::factory(),
-            'discount' => fake()->randomFloat(2, 0, 100),
         ];
     }
 }

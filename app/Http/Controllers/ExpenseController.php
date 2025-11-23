@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ExpenseRequest;
 use App\Models\Category;
+use App\Models\Discount;
 use App\Models\Expense;
 use App\Models\ExpenseDetail;
 use App\Models\PaymentMethod;
@@ -25,7 +26,7 @@ class ExpenseController extends Controller
     public function index(): Response
     {
         $perPage = request('per_page', 10);
-        $expenses = Expense::with(['expenseDetails.category', 'paymentMethod'])
+        $expenses = Expense::with(['expenseDetails.category', 'expenseDiscounts.discount', 'paymentMethod'])
             ->latest('expense_date')
             ->paginate($perPage);
 
@@ -63,10 +64,12 @@ class ExpenseController extends Controller
     {
         $categories = Category::orderBy('name')->get();
         $paymentMethods = PaymentMethod::orderBy('name')->get();
+        $discounts = Discount::orderBy('name')->get();
 
         return Inertia::render('expenses/create', [
             'categories' => $categories,
             'paymentMethods' => $paymentMethods,
+            'discounts' => $discounts,
         ]);
     }
 
@@ -101,15 +104,17 @@ class ExpenseController extends Controller
      */
     public function edit(Expense $expense): Response
     {
-        $expense->load(['expenseDetails.category', 'paymentMethod']);
+        $expense->load(['expenseDetails.category', 'expenseDiscounts.discount', 'paymentMethod']);
 
         $categories = Category::orderBy('name')->get();
         $paymentMethods = PaymentMethod::orderBy('name')->get();
+        $discounts = Discount::orderBy('name')->get();
 
         return Inertia::render('expenses/edit', [
             'expense' => $expense,
             'categories' => $categories,
             'paymentMethods' => $paymentMethods,
+            'discounts' => $discounts,
         ]);
     }
 

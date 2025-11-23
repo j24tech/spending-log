@@ -29,7 +29,8 @@ class ExpenseRequest extends FormRequest
             'document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'], // 5MB max
             'delete_document' => ['nullable', 'boolean'],
             'payment_method_id' => ['required', 'exists:payment_methods,id'],
-            'discount' => ['nullable', 'numeric', 'min:0', 'decimal:0,2'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', 'max:50'],
             'details' => ['required', 'array', 'min:1'],
             'details.*.id' => ['nullable', 'integer', 'exists:expense_details,id'],
             'details.*.name' => ['required_if:details.*._destroy,false', 'string', 'max:150'],
@@ -38,6 +39,13 @@ class ExpenseRequest extends FormRequest
             'details.*.observation' => ['nullable', 'string', 'max:255'],
             'details.*.category_id' => ['required_if:details.*._destroy,false', 'exists:categories,id'],
             'details.*._destroy' => ['nullable', 'boolean'],
+            'expense_discounts' => ['nullable', 'array'],
+            'expense_discounts.*.id' => ['nullable', 'integer', 'exists:expense_discounts,id'],
+            'expense_discounts.*.discount_id' => ['required_if:expense_discounts.*._destroy,false', 'exists:discounts,id'],
+            'expense_discounts.*.observation' => ['nullable', 'string', 'max:255'],
+            'expense_discounts.*.discount_amount' => ['required_if:expense_discounts.*._destroy,false', 'numeric', 'min:0.01', 'decimal:0,2'],
+            'expense_discounts.*.date' => ['required_if:expense_discounts.*._destroy,false', 'date'],
+            'expense_discounts.*._destroy' => ['nullable', 'boolean'],
         ];
     }
 
@@ -56,9 +64,6 @@ class ExpenseRequest extends FormRequest
             'expense_date.date' => 'El campo "Fecha" debe ser una fecha válida.',
             'payment_method_id.required' => 'El campo "Método de Pago" es obligatorio.',
             'payment_method_id.exists' => 'El método de pago seleccionado no existe.',
-            'discount.numeric' => 'El campo "Descuento" debe ser un número.',
-            'discount.min' => 'El campo "Descuento" debe ser mayor o igual a 0.',
-            'discount.decimal' => 'El campo "Descuento" debe tener máximo 2 decimales.',
             'details.required' => 'Debe agregar al menos un detalle del gasto.',
             'details.array' => 'Los detalles del gasto deben ser un array.',
             'details.min' => 'Debe agregar al menos un detalle del gasto.',
@@ -81,6 +86,19 @@ class ExpenseRequest extends FormRequest
             'observation.max' => 'La observación no puede tener más de 255 caracteres.',
             'document_number.string' => 'El número de documento debe ser texto.',
             'document_number.max' => 'El número de documento no puede tener más de 50 caracteres.',
+            'expense_discounts.*.discount_id.required_if' => 'El tipo de descuento es obligatorio.',
+            'expense_discounts.*.discount_id.exists' => 'El tipo de descuento seleccionado no existe.',
+            'expense_discounts.*.discount_amount.required_if' => 'El monto del descuento es obligatorio.',
+            'expense_discounts.*.discount_amount.numeric' => 'El monto del descuento debe ser un número.',
+            'expense_discounts.*.discount_amount.min' => 'El monto del descuento debe ser mayor a cero.',
+            'expense_discounts.*.discount_amount.decimal' => 'El monto del descuento debe tener máximo 2 decimales.',
+            'expense_discounts.*.date.required_if' => 'La fecha del descuento es obligatoria.',
+            'expense_discounts.*.date.date' => 'La fecha del descuento debe ser una fecha válida.',
+            'expense_discounts.*.observation.string' => 'La observación del descuento debe ser texto.',
+            'expense_discounts.*.observation.max' => 'La observación del descuento no puede tener más de 255 caracteres.',
+            'tags.array' => 'Las etiquetas deben ser un arreglo válido.',
+            'tags.*.string' => 'Cada etiqueta debe ser texto.',
+            'tags.*.max' => 'Cada etiqueta no puede tener más de 50 caracteres.',
         ];
     }
 
@@ -110,13 +128,31 @@ class ExpenseRequest extends FormRequest
         $this->merge([
             'observation' => $this->has('observation') && $this->observation === '' ? null : ($this->observation ?? null),
             'document_number' => $this->has('document_number') && $this->document_number === '' ? null : ($this->document_number ?? null),
-            'discount' => $this->has('discount') && $this->discount === '' ? null : ($this->discount ?? null),
             // Convert delete_document from string '1'/'0' or boolean to boolean
             // FormData sends it as string '1', so we need to handle both cases
             'delete_document' => $this->has('delete_document')
                 ? ($this->input('delete_document') === '1' || $this->input('delete_document') === true || $this->input('delete_document') === 'true')
                 : false,
         ]);
+
+        // Convert tags string to array for validation and storage
+        // Input: "chile, jesus, deuda" -> Output: ["chile", "jesus", "deuda"]
+        if ($this->has('tags')) {
+            if (is_string($this->tags)) {
+                $tagsArray = array_filter(
+                    array_map('trim', explode(',', $this->tags)),
+                    fn ($tag) => ! empty($tag)
+                );
+
+                $this->merge([
+                    'tags' => ! empty($tagsArray) ? $tagsArray : null,
+                ]);
+            } elseif (empty($this->tags)) {
+                $this->merge([
+                    'tags' => null,
+                ]);
+            }
+        }
 
         // Ensure at least one detail is not marked for deletion
         $details = $this->input('details', []);
@@ -145,6 +181,34 @@ class ExpenseRequest extends FormRequest
                 'details' => [], // This will fail validation
             ]);
         }
+
+        // Process expense discounts
+        $expenseDiscounts = $this->input('expense_discounts', []);
+        $processedDiscounts = [];
+        foreach ($expenseDiscounts as $index => $discount) {
+            $processedDiscount = $discount;
+            // Convert discount_amount from string to float if present
+            if (isset($discount['discount_amount']) && $discount['discount_amount'] !== '') {
+                $processedDiscount['discount_amount'] = (float) $discount['discount_amount'];
+            }
+            // Convert discount_id to integer if present
+            if (isset($discount['discount_id']) && $discount['discount_id'] !== '') {
+                $processedDiscount['discount_id'] = (int) $discount['discount_id'];
+            }
+            // Set default date to current date if not provided
+            if (!isset($discount['date']) || $discount['date'] === '') {
+                $processedDiscount['date'] = now()->format('Y-m-d');
+            }
+            // Convert observation empty string to null
+            if (isset($discount['observation']) && $discount['observation'] === '') {
+                $processedDiscount['observation'] = null;
+            }
+            $processedDiscounts[] = $processedDiscount;
+        }
+
+        if (! empty($processedDiscounts)) {
+            $this->merge(['expense_discounts' => $processedDiscounts]);
+        }
     }
 
     /**
@@ -168,13 +232,42 @@ class ExpenseRequest extends FormRequest
                 $subtotal += $amount * $quantity;
             }
 
-            $discount = floatval($this->input('discount', 0));
+            // Calculate total discounts (only applied discounts)
+            $expenseDiscounts = $this->input('expense_discounts', []);
+            $totalAppliedDiscounts = 0;
 
-            // Validate that discount is not greater than subtotal
-            if ($discount > $subtotal) {
+            foreach ($expenseDiscounts as $index => $expenseDiscount) {
+                // Skip discounts marked for deletion
+                if (isset($expenseDiscount['_destroy']) && $expenseDiscount['_destroy']) {
+                    continue;
+                }
+
+                $discountAmount = floatval($expenseDiscount['discount_amount'] ?? 0);
+                
+                // Validate that discount amount is greater than zero
+                if ($discountAmount <= 0) {
+                    $validator->errors()->add(
+                        "expense_discounts.{$index}.discount_amount",
+                        "El monto del descuento debe ser mayor a cero."
+                    );
+                }
+                
+                // Validate that each individual discount is not greater than subtotal
+                if ($discountAmount > $subtotal) {
+                    $validator->errors()->add(
+                        "expense_discounts.{$index}.discount_amount",
+                        "El monto del descuento (".number_format($discountAmount, 2).") no puede ser mayor que el subtotal del gasto (".number_format($subtotal, 2).")."
+                    );
+                }
+
+                $totalAppliedDiscounts += $discountAmount;
+            }
+
+            // Validate that total discounts are not greater than subtotal
+            if ($totalAppliedDiscounts > $subtotal) {
                 $validator->errors()->add(
-                    'discount',
-                    'El descuento no puede ser mayor que el subtotal del gasto ('.number_format($subtotal, 2).').'
+                    'expense_discounts',
+                    'La suma de todos los descuentos no puede ser mayor que el subtotal del gasto ('.number_format($subtotal, 2).').'
                 );
             }
         });

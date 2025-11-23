@@ -1,4 +1,5 @@
 import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,9 +37,25 @@ interface ExpenseDetail {
     _destroy?: boolean; // Mark for deletion
 }
 
+interface ExpenseDiscount {
+    id?: number; // Optional, only exists for existing discounts
+    discount_id: string;
+    observation: string;
+    discount_amount: string;
+    date: string;
+    _destroy?: boolean; // Mark for deletion
+}
+
+interface Discount {
+    id: number;
+    name: string;
+    observation: string | null;
+}
+
 interface Props {
     categories: Category[];
     paymentMethods: PaymentMethod[];
+    discounts: Discount[];
     expense?: {
         id: number;
         name: string;
@@ -47,7 +64,7 @@ interface Props {
         document_number: string | null;
         document_path: string | null;
         payment_method_id: number;
-        discount: number;
+        tags: string[] | null;
         expense_details: Array<{
             id: number;
             name: string;
@@ -56,10 +73,17 @@ interface Props {
             observation: string | null;
             category_id: number;
         }>;
+        expense_discounts?: Array<{
+            id: number;
+            discount_id: number;
+            observation: string | null;
+            discount_amount: string;
+            date: string;
+        }>;
     };
 }
 
-export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
+export function ExpenseForm({ categories, paymentMethods, discounts, expense }: Props) {
     const isEditing = !!expense;
     const { showFlash } = useFlash();
 
@@ -105,7 +129,7 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
             payment_method_id: expense?.payment_method_id
                 ? expense.payment_method_id.toString()
                 : '',
-            discount: expense?.discount?.toString() || '0',
+            tags: expense?.tags ? expense.tags.join(', ') : '',
             details:
                 expense?.expense_details.map((d) => ({
                     id: d.id,
@@ -128,6 +152,15 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                         _destroy: false,
                     },
                 ] as ExpenseDetail[]),
+            expense_discounts:
+                expense?.expense_discounts?.map((ed) => ({
+                    id: ed.id,
+                    discount_id: ed.discount_id.toString(),
+                    observation: ed.observation || '',
+                    discount_amount: ed.discount_amount,
+                    date: formatDateForInput(ed.date) || getCurrentDate(),
+                    _destroy: false,
+                })) || ([] as ExpenseDiscount[]),
         },
         {
             transform: (data) => {
@@ -167,7 +200,6 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                 );
 
                 // Include ALL optional fields
-                transformed.discount = String(sourceData.discount || '0');
                 transformed.observation =
                     sourceData.observation === ''
                         ? null
@@ -176,6 +208,10 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                     sourceData.document_number === ''
                         ? null
                         : sourceData.document_number || null;
+                transformed.tags =
+                    sourceData.tags === ''
+                        ? null
+                        : sourceData.tags || null;
 
                 // Serialize details array properly for FormData
                 // In FormData, arrays must be properly serialized for Laravel to parse them correctly
@@ -213,6 +249,59 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                     );
                 } else {
                     transformed.details = [];
+                }
+
+                // Serialize expense_discounts array properly for FormData
+                if (
+                    Array.isArray(sourceData.expense_discounts) &&
+                    sourceData.expense_discounts.length > 0
+                ) {
+                    transformed.expense_discounts = sourceData.expense_discounts.map(
+                        (discount: ExpenseDiscount) => {
+                            const discountObj: any = {
+                                discount_id: String(discount.discount_id || ''),
+                                discount_amount: String(
+                                    discount.discount_amount || '0',
+                                ),
+                                _destroy: discount._destroy || false,
+                            };
+
+                            // Only include id if it exists (for updates)
+                            if (discount.id) {
+                                discountObj.id = String(discount.id);
+                            }
+
+                            // Include date - ensure it's in YYYY-MM-DD format
+                            if (discount.date) {
+                                const dateStr = String(discount.date);
+                                if (dateStr.includes('/')) {
+                                    // Format: DD/MM/YYYY -> YYYY-MM-DD
+                                    const [day, month, year] = dateStr.split('/');
+                                    discountObj.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                                } else {
+                                    discountObj.date = dateStr;
+                                }
+                            } else {
+                                // Default to current date if not provided
+                                const today = new Date();
+                                discountObj.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                            }
+
+                            // Only include observation if it's not empty
+                            if (
+                                discount.observation &&
+                                discount.observation.trim() !== ''
+                            ) {
+                                discountObj.observation = discount.observation;
+                            } else {
+                                discountObj.observation = null;
+                            }
+
+                            return discountObj;
+                        },
+                    );
+                } else {
+                    transformed.expense_discounts = [];
                 }
 
                 // Include document ONLY if it's a File object
@@ -254,24 +343,11 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
         }
         return '';
     });
-    const [discountError, setDiscountError] = useState<string>('');
     const [isSubmittingWithFile, setIsSubmittingWithFile] = useState(false);
     // Use ref to store complete data for transform when submitting with file
     const pendingSubmitData = useRef<any>(null);
 
-    // Validate discount whenever it or details change
-    useEffect(() => {
-        const subtotal = calculateSubtotal();
-        const discount = parseFloat(data.discount) || 0;
-
-        if (discount > subtotal) {
-            setDiscountError(
-                `El descuento no puede ser mayor que el subtotal del gasto ($${subtotal.toFixed(2)}).`,
-            );
-        } else {
-            setDiscountError('');
-        }
-    }, [data.discount, data.details]);
+    // Note: Discount validation is handled in the backend via ExpenseRequest
 
     // CRITICAL: Ensure all fields are present when a document is added during edit
     // This fixes the issue where only the file is changed and other fields are lost
@@ -301,7 +377,6 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                     payment_method_id:
                         data.payment_method_id ||
                         expense.payment_method_id.toString(),
-                    discount: data.discount || expense.discount.toString(),
                     observation: data.observation ?? expense.observation ?? '',
                     document_number:
                         data.document_number ?? expense.document_number ?? '',
@@ -448,6 +523,74 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
         setData('details', newDetails);
     };
 
+    const addDiscount = () => {
+        // Validar que todos los descuentos existentes tengan un monto mayor a cero
+        const activeDiscounts = data.expense_discounts.filter(
+            (d) => !d._destroy,
+        );
+        
+        const hasZeroDiscount = activeDiscounts.some(
+            (discount) =>
+                !discount.discount_id ||
+                parseFloat(discount.discount_amount || '0') === 0,
+        );
+
+        if (hasZeroDiscount) {
+            showFlash(
+                'error',
+                'No se puede agregar un nuevo descuento. Complete o elimine el descuento anterior que tiene monto cero.',
+            );
+            return;
+        }
+
+        setData('expense_discounts', [
+            ...data.expense_discounts,
+            {
+                discount_id: '',
+                observation: '',
+                discount_amount: '0',
+                date: getCurrentDate(),
+                _destroy: false,
+            },
+        ]);
+    };
+
+    const removeDiscount = (index: number) => {
+        const discount = data.expense_discounts[index];
+
+        // If it's an existing discount (has id), mark for deletion instead of removing
+        if (discount.id) {
+            const newDiscounts = [...data.expense_discounts];
+            newDiscounts[index] = { ...discount, _destroy: true };
+            setData('expense_discounts', newDiscounts);
+        } else {
+            // If it's a new discount, remove it from the array
+            const newDiscounts = data.expense_discounts.filter(
+                (_, i) => i !== index,
+            );
+            setData('expense_discounts', newDiscounts);
+        }
+    };
+
+    const restoreDiscount = (index: number) => {
+        const newDiscounts = [...data.expense_discounts];
+        newDiscounts[index] = {
+            ...newDiscounts[index],
+            _destroy: false,
+        };
+        setData('expense_discounts', newDiscounts);
+    };
+
+    const updateDiscount = (
+        index: number,
+        field: keyof ExpenseDiscount,
+        value: string,
+    ) => {
+        const newDiscounts = [...data.expense_discounts];
+        newDiscounts[index] = { ...newDiscounts[index], [field]: value };
+        setData('expense_discounts', newDiscounts);
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -529,17 +672,41 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
             }, 0);
     };
 
+    const calculateAppliedDiscounts = () => {
+        return data.expense_discounts
+            .filter((discount) => !discount._destroy)
+            .reduce((sum, discount) => {
+                const amount = parseFloat(discount.discount_amount) || 0;
+                return sum + amount;
+            }, 0);
+    };
+
     const calculateTotal = () => {
         const subtotal = calculateSubtotal();
-        const discount = parseFloat(data.discount) || 0;
-        return Math.max(0, subtotal - discount);
+        const appliedDiscounts = calculateAppliedDiscounts();
+        return Math.max(0, subtotal - appliedDiscounts);
     };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        // Prevent submission if there's a discount error
-        if (discountError) {
+        // Validar que no haya descuentos con monto cero antes de enviar
+        const activeDiscounts = data.expense_discounts.filter(
+            (d) => !d._destroy,
+        );
+        
+        const hasZeroDiscount = activeDiscounts.some(
+            (discount) => {
+                const amount = parseFloat(discount.discount_amount || '0');
+                return amount <= 0;
+            }
+        );
+
+        if (hasZeroDiscount) {
+            showFlash(
+                'error',
+                'No se puede guardar el gasto. Todos los descuentos deben tener un monto mayor a cero.',
+            );
             return;
         }
 
@@ -560,24 +727,35 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                 payment_method_id:
                     data.payment_method_id ||
                     expense.payment_method_id.toString(),
-                discount: data.discount || expense.discount.toString(),
                 observation: data.observation ?? expense.observation ?? '',
                 document_number:
                     data.document_number ?? expense.document_number ?? '',
-                details:
-                    data.details && data.details.length > 0
-                        ? data.details
-                        : expense.expense_details.map((d) => ({
-                              id: d.id,
-                              name: d.name,
-                              amount: d.amount,
-                              quantity: Math.floor(
-                                  parseFloat(d.quantity) || 1,
-                              ).toString(),
-                              observation: d.observation || '',
-                              category_id: d.category_id.toString(),
-                              _destroy: false,
-                          })),
+                tags: data.tags ?? (expense.tags ? expense.tags.join(', ') : '') ?? '',
+                    details:
+                        data.details && data.details.length > 0
+                            ? data.details
+                            : expense.expense_details.map((d) => ({
+                                  id: d.id,
+                                  name: d.name,
+                                  amount: d.amount,
+                                  quantity: Math.floor(
+                                      parseFloat(d.quantity) || 1,
+                                  ).toString(),
+                                  observation: d.observation || '',
+                                  category_id: d.category_id.toString(),
+                                  _destroy: false,
+                              })),
+                    expense_discounts:
+                        data.expense_discounts && data.expense_discounts.length > 0
+                            ? data.expense_discounts
+                            : (expense.expense_discounts?.map((ed) => ({
+                                  id: ed.id,
+                                  discount_id: ed.discount_id.toString(),
+                                  observation: ed.observation || '',
+                                  discount_amount: ed.discount_amount,
+                                  date: formatDateForInput(ed.date) || getCurrentDate(),
+                                  _destroy: false,
+                              })) || []),
                 document: data.document, // Keep the file
             };
 
@@ -600,13 +778,13 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                 'payment_method_id',
                 completeData.payment_method_id,
             );
-            formData.append('discount', completeData.discount || '0');
             // Always append nullable fields (even if empty)
             formData.append('observation', completeData.observation || '');
             formData.append(
                 'document_number',
                 completeData.document_number || '',
             );
+            formData.append('tags', completeData.tags || '');
             formData.append('document', completeData.document);
 
             // Serialize details array for FormData
@@ -641,6 +819,44 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                 },
             );
 
+                    // Serialize expense_discounts array for FormData
+                    if (completeData.expense_discounts) {
+                        completeData.expense_discounts.forEach(
+                            (discount: ExpenseDiscount, index: number) => {
+                                if (discount.id) {
+                                    formData.append(
+                                        `expense_discounts[${index}][id]`,
+                                        String(discount.id),
+                                    );
+                                }
+                                formData.append(
+                                    `expense_discounts[${index}][discount_id]`,
+                                    discount.discount_id,
+                                );
+                                formData.append(
+                                    `expense_discounts[${index}][discount_amount]`,
+                                    discount.discount_amount,
+                                );
+                                // Include date - ensure it's in YYYY-MM-DD format
+                                const dateValue = discount.date || getCurrentDate();
+                                formData.append(
+                                    `expense_discounts[${index}][date]`,
+                                    dateValue,
+                                );
+                                if (discount.observation) {
+                                    formData.append(
+                                        `expense_discounts[${index}][observation]`,
+                                        discount.observation,
+                                    );
+                                }
+                                formData.append(
+                                    `expense_discounts[${index}][_destroy]`,
+                                    discount._destroy ? '1' : '0',
+                                );
+                            },
+                        );
+                    }
+
             // Use router.post directly with FormData
             router.post(`/expenses/${expense.id}`, formData, {
                 forceFormData: true,
@@ -671,7 +887,6 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                     formatDateForInput(expense.expense_date);
                 formData.append('expense_date', expenseDate);
                 formData.append('payment_method_id', data.payment_method_id);
-                formData.append('discount', data.discount || '0');
                 formData.append('observation', data.observation || '');
                 formData.append('document_number', data.document_number || '');
                 formData.append('delete_document', '1'); // Signal to delete document
@@ -705,6 +920,36 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                         detail._destroy ? '1' : '0',
                     );
                 });
+
+                    // Serialize expense_discounts array for FormData
+                    data.expense_discounts.forEach(
+                        (discount: ExpenseDiscount, index: number) => {
+                            if (discount.id) {
+                                formData.append(
+                                    `expense_discounts[${index}][id]`,
+                                    String(discount.id),
+                                );
+                            }
+                            formData.append(
+                                `expense_discounts[${index}][discount_id]`,
+                                discount.discount_id,
+                            );
+                            formData.append(
+                                `expense_discounts[${index}][discount_amount]`,
+                                discount.discount_amount,
+                            );
+                            if (discount.observation) {
+                                formData.append(
+                                    `expense_discounts[${index}][observation]`,
+                                    discount.observation,
+                                );
+                            }
+                            formData.append(
+                                `expense_discounts[${index}][_destroy]`,
+                                discount._destroy ? '1' : '0',
+                            );
+                        },
+                    );
 
                 router.post(`/expenses/${expense.id}`, formData, {
                     forceFormData: true,
@@ -820,29 +1065,27 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                             </Select>
                             <InputError message={errors.payment_method_id} />
                         </div>
+                    </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="discount">Descuento</Label>
-                            <Input
-                                id="discount"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={data.discount}
-                                onChange={(e) =>
-                                    setData('discount', e.target.value)
-                                }
-                                placeholder="0.00"
-                                className={
-                                    discountError
-                                        ? 'border-red-500 focus-visible:ring-red-500'
-                                        : ''
-                                }
-                            />
-                            <InputError
-                                message={errors.discount || discountError}
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="tags">Etiquetas</Label>
+                        <Input
+                            id="tags"
+                            value={data.tags}
+                            onChange={(e) =>
+                                setData('tags', e.target.value)
+                            }
+                            placeholder="Ej: chile, jesus, deuda (separadas por comas)"
+                            className={
+                                errors.tags
+                                    ? 'border-destructive'
+                                    : ''
+                            }
+                        />
+                        <p className="text-sm text-muted-foreground">
+                            Separa las etiquetas con comas
+                        </p>
+                        <InputError message={errors.tags} />
                     </div>
 
                     <div className="space-y-2">
@@ -861,6 +1104,283 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                 </CardContent>
             </Card>
 
+            {/* Descuentos Aplicados */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Descuentos Aplicados</CardTitle>
+                        <Button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                addDiscount();
+                            }}
+                            size="sm"
+                            variant="outline"
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Agregar Descuento
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {data.expense_discounts.map((discount, index) => {
+                        // Calcular el número del descuento basado en los descuentos que no están marcados para eliminar
+                        const discountNumber = data.expense_discounts
+                            .slice(0, index + 1)
+                            .filter((d) => !d._destroy).length;
+
+                        return (
+                            <Card
+                                key={discount.id || index}
+                                className={
+                                    discount._destroy
+                                        ? 'border-destructive/50 bg-destructive/10'
+                                        : 'bg-muted/30'
+                                }
+                            >
+                                <CardContent className="pt-4">
+                                    {discount._destroy ? (
+                                        // Modo eliminado - Mostrar solo resumen con opción de restaurar
+                                        <div className="flex items-center justify-between py-2">
+                                            <div className="flex items-center gap-4">
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline" className="text-destructive">
+                                                            Descuento {discountNumber}
+                                                        </Badge>
+                                                        <p className="font-medium text-destructive line-through">
+                                                            {(discounts || []).find((d) => d.id.toString() === discount.discount_id)?.name || 'Descuento'}
+                                                        </p>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Este descuento será eliminado al guardar
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => restoreDiscount(index)}
+                                            >
+                                                Restaurar
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        // Modo normal - Mostrar campos editables
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Badge variant="secondary">
+                                                    Descuento {discountNumber}
+                                                </Badge>
+                                            </div>
+                                            <div className="grid gap-3 md:grid-cols-12">
+                                            <div className="space-y-1 md:col-span-4">
+                                                <Label className="text-xs">
+                                                    Tipo de Descuento *
+                                                </Label>
+                                                <Select
+                                                    value={discount.discount_id}
+                                                    onValueChange={(value) =>
+                                                        updateDiscount(
+                                                            index,
+                                                            'discount_id',
+                                                            value,
+                                                        )
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Seleccionar descuento" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {(discounts || []).map(
+                                                            (disc) => (
+                                                                <SelectItem
+                                                                    key={disc.id}
+                                                                    value={disc.id.toString()}
+                                                                >
+                                                                    {disc.name}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                                <InputError
+                                                    message={
+                                                        errors[
+                                                            `expense_discounts.${index}.discount_id` as keyof typeof errors
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1 md:col-span-3">
+                                                <Label className="text-xs">
+                                                    Monto del Descuento *
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    value={discount.discount_amount}
+                                                    onChange={(e) =>
+                                                        updateDiscount(
+                                                            index,
+                                                            'discount_amount',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="0.00"
+                                                    className={
+                                                        (() => {
+                                                            const subtotal = calculateSubtotal();
+                                                            const discountAmount = parseFloat(discount.discount_amount) || 0;
+                                                            return discountAmount > subtotal
+                                                                ? 'border-destructive'
+                                                                : '';
+                                                        })() ||
+                                                        errors[
+                                                            `expense_discounts.${index}.discount_amount` as keyof typeof errors
+                                                        ]
+                                                            ? 'border-destructive'
+                                                            : ''
+                                                    }
+                                                />
+                                                {(() => {
+                                                    const subtotal = calculateSubtotal();
+                                                    const discountAmount = parseFloat(discount.discount_amount) || 0;
+                                                    const errorMessage =
+                                                        errors[
+                                                            `expense_discounts.${index}.discount_amount` as keyof typeof errors
+                                                        ];
+                                                    
+                                                    if (errorMessage) {
+                                                        return <InputError message={errorMessage} />;
+                                                    }
+                                                    
+                                                    if (discountAmount > subtotal && discountAmount > 0) {
+                                                        return (
+                                                            <InputError
+                                                                message={`El monto del descuento (${discountAmount.toFixed(2)}) no puede ser mayor que el subtotal del gasto (${subtotal.toFixed(2)}).`}
+                                                            />
+                                                        );
+                                                    }
+                                                    
+                                                    return null;
+                                                })()}
+                                            </div>
+
+                                            <div className="space-y-1 md:col-span-2">
+                                                <Label className="text-xs">
+                                                    Fecha *
+                                                </Label>
+                                                <Input
+                                                    type="date"
+                                                    value={discount.date || getCurrentDate()}
+                                                    onChange={(e) =>
+                                                        updateDiscount(
+                                                            index,
+                                                            'date',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                                <InputError
+                                                    message={
+                                                        errors[
+                                                            `expense_discounts.${index}.date` as keyof typeof errors
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+
+                                            <div className="flex items-end md:col-span-1">
+                                                {data.expense_discounts.filter(
+                                                    (d) => !d._destroy,
+                                                ).length > 0 && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            removeDiscount(index)
+                                                        }
+                                                        className="text-destructive hover:text-destructive"
+                                                        title={
+                                                            discount.id
+                                                                ? 'Marcar para eliminar'
+                                                                : 'Eliminar descuento'
+                                                        }
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Observación opcional para cada descuento */}
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">
+                                                Observación del descuento
+                                            </Label>
+                                            <Input
+                                                value={discount.observation}
+                                                onChange={(e) =>
+                                                    updateDiscount(
+                                                        index,
+                                                        'observation',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Descripción adicional (opcional)"
+                                                className="text-sm"
+                                            />
+                                            <InputError
+                                                message={
+                                                    errors[
+                                                        `expense_discounts.${index}.observation` as keyof typeof errors
+                                                    ]
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                        );
+                    })}
+
+                    {data.expense_discounts.filter((d) => !d._destroy).length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                            No tiene descuentos aplicados
+                        </p>
+                    )}
+
+                    {data.expense_discounts.filter((d) => !d._destroy).length > 0 && (
+                        <div className="flex justify-end border-t pt-4">
+                            <div className="space-y-1 text-right">
+                                <div className="flex items-center justify-between gap-8 text-sm">
+                                    <span className="text-muted-foreground">
+                                        Total Descuentos (
+                                        {
+                                            data.expense_discounts.filter((d) => !d._destroy)
+                                                .length
+                                        }{' '}
+                                        descuento{data.expense_discounts.filter((d) => !d._destroy).length !== 1 ? 's' : ''})
+                                    </span>
+                                    <span className="font-medium text-red-600 dark:text-red-400">
+                                        -${calculateAppliedDiscounts().toFixed(2)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
             {/* Detalles del Gasto */}
             <Card>
                 <CardHeader>
@@ -868,7 +1388,11 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                         <CardTitle>Detalles del Gasto</CardTitle>
                         <Button
                             type="button"
-                            onClick={addDetail}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                addDetail();
+                            }}
                             size="sm"
                             variant="outline"
                         >
@@ -878,44 +1402,60 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {data.details.map((detail, index) => (
-                        <Card
-                            key={detail.id || index}
-                            className={
-                                detail._destroy
-                                    ? 'border-destructive/50 bg-destructive/10'
-                                    : 'bg-muted/30'
-                            }
-                        >
-                            <CardContent className="pt-4">
-                                {detail._destroy ? (
-                                    // Modo eliminado - Mostrar solo resumen con opción de restaurar
-                                    <div className="flex items-center justify-between py-2">
-                                        <div className="flex items-center gap-4">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                            <div>
-                                                <p className="font-medium text-destructive line-through">
-                                                    {detail.name}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Este ítem será eliminado al
-                                                    guardar
-                                                </p>
+                    {data.details.map((detail, index) => {
+                        // Calcular el número del ítem basado en los detalles que no están marcados para eliminar
+                        const itemNumber = data.details
+                            .slice(0, index + 1)
+                            .filter((d) => !d._destroy).length;
+
+                        return (
+                            <Card
+                                key={detail.id || index}
+                                className={
+                                    detail._destroy
+                                        ? 'border-destructive/50 bg-destructive/10'
+                                        : 'bg-muted/30'
+                                }
+                            >
+                                <CardContent className="pt-4">
+                                    {detail._destroy ? (
+                                        // Modo eliminado - Mostrar solo resumen con opción de restaurar
+                                        <div className="flex items-center justify-between py-2">
+                                            <div className="flex items-center gap-4">
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline" className="text-destructive">
+                                                            Ítem {itemNumber}
+                                                        </Badge>
+                                                        <p className="font-medium text-destructive line-through">
+                                                            {detail.name}
+                                                        </p>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Este ítem será eliminado al
+                                                        guardar
+                                                    </p>
+                                                </div>
                                             </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => restoreDetail(index)}
+                                            >
+                                                Restaurar
+                                            </Button>
                                         </div>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => restoreDetail(index)}
-                                        >
-                                            Restaurar
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    // Modo normal - Mostrar campos editables
-                                    <div className="space-y-3">
-                                        <div className="grid gap-3 md:grid-cols-12">
+                                    ) : (
+                                        // Modo normal - Mostrar campos editables
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Badge variant="secondary">
+                                                    Ítem {itemNumber}
+                                                </Badge>
+                                            </div>
+                                            <div className="grid gap-3 md:grid-cols-12">
                                             <div className="space-y-1 md:col-span-4">
                                                 <Label className="text-xs">
                                                     Descripción *
@@ -1148,7 +1688,8 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                                 )}
                             </CardContent>
                         </Card>
-                    ))}
+                        );
+                    })}
 
                     <div className="flex justify-end border-t pt-4">
                         <div className="space-y-1 text-right">
@@ -1165,13 +1706,13 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                                     ${calculateSubtotal().toFixed(2)}
                                 </span>
                             </div>
-                            {parseFloat(data.discount) > 0 && (
+                            {data.expense_discounts.filter((d) => !d._destroy).length > 0 && (
                                 <div className="flex items-center justify-between gap-8 text-sm">
                                     <span className="text-muted-foreground">
-                                        Descuento
+                                        Descuentos Aplicados ({data.expense_discounts.filter((d) => !d._destroy).length})
                                     </span>
                                     <span className="font-medium text-red-600">
-                                        -${parseFloat(data.discount).toFixed(2)}
+                                        -${calculateAppliedDiscounts().toFixed(2)}
                                     </span>
                                 </div>
                             )}
@@ -1183,13 +1724,9 @@ export function ExpenseForm({ categories, paymentMethods, expense }: Props) {
                                     ${calculateTotal().toFixed(2)}
                                 </span>
                             </div>
-                            {data.details.some((d) => d._destroy) && (
+                            {(data.details.some((d) => d._destroy) || data.expense_discounts.some((d) => d._destroy)) && (
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                    {
-                                        data.details.filter((d) => d._destroy)
-                                            .length
-                                    }{' '}
-                                    ítem(s) marcado(s) para eliminar
+                                    {data.details.filter((d) => d._destroy).length} ítem(s) y {data.expense_discounts.filter((d) => d._destroy).length} descuento(s) marcado(s) para eliminar
                                 </p>
                             )}
                         </div>

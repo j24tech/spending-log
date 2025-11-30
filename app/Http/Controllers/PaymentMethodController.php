@@ -66,8 +66,15 @@ class PaymentMethodController extends Controller
      */
     public function destroy(PaymentMethod $paymentMethod): RedirectResponse
     {
+        // Verificar si el método de pago tiene gastos asociados
+        if ($paymentMethod->expenses()->count() > 0) {
+            return back()->withErrors([
+                'payment_method' => 'No se puede eliminar este método de pago porque tiene gastos asociados.',
+            ]);
+        }
+
         $paymentMethod->delete();
 
-        return to_route('payment-methods.index');
+        return to_route('payment-methods.index')->with('success', 'Método de pago eliminado correctamente.');
     }
 }

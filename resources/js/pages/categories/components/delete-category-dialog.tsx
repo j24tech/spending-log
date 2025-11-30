@@ -34,8 +34,12 @@ export function DeleteCategoryDialog({ category, open, onOpenChange }: Props) {
                 onOpenChange(false);
                 showFlash('success', 'Categoría eliminada exitosamente');
             },
-            onError: () => {
-                showFlash('error', 'Error al eliminar la categoría');
+            onError: (errors) => {
+                if (errors.category) {
+                    showFlash('error', errors.category as string);
+                } else {
+                    showFlash('error', 'Error al eliminar la categoría');
+                }
             },
         });
     };

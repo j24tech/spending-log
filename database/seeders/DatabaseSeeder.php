@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
         $user = User::firstOrCreate(
             ['email' => 'jesusdasilva@gmail.com'],
             [
-                'name' => 'Jesus da Silva',
+                'name' => 'Jesus Dasilva',
                 'password' => null, // Solo Google OAuth
                 'email_verified_at' => now(),
                 'authorized' => true,

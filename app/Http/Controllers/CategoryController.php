@@ -66,8 +66,15 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category): RedirectResponse
     {
+        // Verificar si la categoría tiene gastos asociados
+        if ($category->expenseDetails()->count() > 0) {
+            return back()->withErrors([
+                'category' => 'No se puede eliminar esta categoría porque tiene gastos asociados.',
+            ]);
+        }
+
         $category->delete();
 
-        return to_route('categories.index');
+        return to_route('categories.index')->with('success', 'Categoría eliminada correctamente.');
     }
 }

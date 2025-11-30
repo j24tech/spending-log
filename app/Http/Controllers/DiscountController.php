@@ -66,16 +66,16 @@ class DiscountController extends Controller
      */
     public function destroy(Discount $discount): RedirectResponse
     {
-        // Check if discount is being used
+        // Verificar si el descuento tiene gastos asociados
         if ($discount->expenseDiscounts()->count() > 0) {
             return back()->withErrors([
-                'discount' => 'No se puede eliminar este descuento porque está siendo utilizado en uno o más gastos.',
+                'discount' => 'No se puede eliminar este descuento porque tiene gastos asociados.',
             ]);
         }
 
         $discount->delete();
 
-        return to_route('discounts.index');
+        return to_route('discounts.index')->with('success', 'Descuento eliminado correctamente.');
     }
 }
 

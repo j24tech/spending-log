@@ -38,8 +38,12 @@ export function DeletePaymentMethodDialog({
                 showFlash('success', 'Método de pago eliminado exitosamente');
                 onOpenChange(false);
             },
-            onError: () => {
-                showFlash('error', 'Error al eliminar el método de pago');
+            onError: (errors) => {
+                if (errors.payment_method) {
+                    showFlash('error', errors.payment_method as string);
+                } else {
+                    showFlash('error', 'Error al eliminar el método de pago');
+                }
             },
         });
     };

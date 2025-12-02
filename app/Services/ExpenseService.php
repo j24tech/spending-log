@@ -33,6 +33,7 @@ class ExpenseService
                 'document_number' => $data['document_number'] ?? null,
                 'document_path' => $data['document_path'] ?? null,
                 'payment_method_id' => $data['payment_method_id'],
+                'tags' => $data['tags'] ?? null,
             ]);
 
             // Create expense details
@@ -93,6 +94,7 @@ class ExpenseService
                 'document_number' => $data['document_number'] ?? null,
                 'document_path' => $documentPath, // Explicitly null if deleted, new path if uploaded, or existing if no change
                 'payment_method_id' => $data['payment_method_id'],
+                'tags' => $data['tags'] ?? null,
             ]);
 
             // Update expense details

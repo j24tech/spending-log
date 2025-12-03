@@ -1,9 +1,9 @@
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useFlash } from '@/contexts/FlashContext';
 import AppLayout from '@/layouts/app-layout';
@@ -108,7 +108,7 @@ export default function CreateDiscount() {
                                 </div>
 
                                 <div className="flex items-center space-x-2">
-                                    <Checkbox
+                                    <Switch
                                         id="is_active"
                                         checked={data.is_active}
                                         onCheckedChange={(checked) =>

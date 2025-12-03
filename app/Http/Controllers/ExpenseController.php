@@ -106,9 +106,32 @@ class ExpenseController extends Controller
     {
         $expense->load(['expenseDetails.category', 'expenseDiscounts.discount', 'paymentMethod']);
 
-        $categories = Category::where('is_active', true)->orderBy('name')->get();
-        $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('name')->get();
-        $discounts = Discount::where('is_active', true)->orderBy('name')->get();
+        // Get IDs of items currently used in this expense
+        $usedCategoryIds = $expense->expenseDetails->pluck('category_id')->unique()->filter();
+        $usedPaymentMethodId = $expense->payment_method_id;
+        $usedDiscountIds = $expense->expenseDiscounts->pluck('discount_id')->unique()->filter();
+
+        // Get active items plus the ones currently used (even if inactive)
+        $categories = Category::where(function ($query) use ($usedCategoryIds) {
+            $query->where('is_active', true)
+                ->when($usedCategoryIds->isNotEmpty(), function ($q) use ($usedCategoryIds) {
+                    $q->orWhereIn('id', $usedCategoryIds);
+                });
+        })->orderBy('name')->get();
+
+        $paymentMethods = PaymentMethod::where(function ($query) use ($usedPaymentMethodId) {
+            $query->where('is_active', true)
+                ->when($usedPaymentMethodId, function ($q) use ($usedPaymentMethodId) {
+                    $q->orWhere('id', $usedPaymentMethodId);
+                });
+        })->orderBy('name')->get();
+
+        $discounts = Discount::where(function ($query) use ($usedDiscountIds) {
+            $query->where('is_active', true)
+                ->when($usedDiscountIds->isNotEmpty(), function ($q) use ($usedDiscountIds) {
+                    $q->orWhereIn('id', $usedDiscountIds);
+                });
+        })->orderBy('name')->get();
 
         return Inertia::render('expenses/edit', [
             'expense' => $expense,

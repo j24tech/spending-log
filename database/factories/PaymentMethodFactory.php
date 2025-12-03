@@ -18,6 +18,17 @@ class PaymentMethodFactory extends Factory
     {
         return [
             'name' => fake()->randomElement(['Efectivo', 'Tarjeta de Crédito', 'Tarjeta de Débito', 'Transferencia', 'Cheque']),
+            'is_active' => true,
         ];
+    }
+
+    /**
+     * Indicate that the payment method is inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
     }
 }

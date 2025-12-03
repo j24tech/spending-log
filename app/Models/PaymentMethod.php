@@ -19,6 +19,7 @@ class PaymentMethod extends Model
         'name',
         'observation',
         'tags',
+        'is_active',
     ];
 
     /**
@@ -28,6 +29,7 @@ class PaymentMethod extends Model
      */
     protected $casts = [
         'tags' => 'array',
+        'is_active' => 'boolean',
     ];
 
     /**

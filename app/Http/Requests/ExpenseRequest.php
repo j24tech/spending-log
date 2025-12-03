@@ -196,7 +196,7 @@ class ExpenseRequest extends FormRequest
                 $processedDiscount['discount_id'] = (int) $discount['discount_id'];
             }
             // Set default date to current date if not provided
-            if (!isset($discount['date']) || $discount['date'] === '') {
+            if (! isset($discount['date']) || $discount['date'] === '') {
                 $processedDiscount['date'] = now()->format('Y-m-d');
             }
             // Convert observation empty string to null
@@ -243,20 +243,20 @@ class ExpenseRequest extends FormRequest
                 }
 
                 $discountAmount = floatval($expenseDiscount['discount_amount'] ?? 0);
-                
+
                 // Validate that discount amount is greater than zero
                 if ($discountAmount <= 0) {
                     $validator->errors()->add(
                         "expense_discounts.{$index}.discount_amount",
-                        "El monto del descuento debe ser mayor a cero."
+                        'El monto del descuento debe ser mayor a cero.'
                     );
                 }
-                
+
                 // Validate that each individual discount is not greater than subtotal
                 if ($discountAmount > $subtotal) {
                     $validator->errors()->add(
                         "expense_discounts.{$index}.discount_amount",
-                        "El monto del descuento (".number_format($discountAmount, 2).") no puede ser mayor que el subtotal del gasto (".number_format($subtotal, 2).")."
+                        'El monto del descuento ('.number_format($discountAmount, 2).') no puede ser mayor que el subtotal del gasto ('.number_format($subtotal, 2).').'
                     );
                 }
 

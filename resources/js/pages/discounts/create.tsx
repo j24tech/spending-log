@@ -1,6 +1,7 @@
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +16,7 @@ export default function CreateDiscount() {
         name: '',
         observation: '',
         tags: '',
+        is_active: true,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -104,6 +106,25 @@ export default function CreateDiscount() {
                                     </p>
                                     <InputError message={errors.tags} />
                                 </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="is_active"
+                                        checked={data.is_active}
+                                        onCheckedChange={(checked) =>
+                                            setData(
+                                                'is_active',
+                                                checked as boolean,
+                                            )
+                                        }
+                                    />
+                                    <Label
+                                        htmlFor="is_active"
+                                        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                    >
+                                        Activo
+                                    </Label>
+                                </div>
                             </div>
                         </div>
 
@@ -121,5 +142,3 @@ export default function CreateDiscount() {
         </AppLayout>
     );
 }
-
-

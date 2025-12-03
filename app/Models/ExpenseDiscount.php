@@ -49,5 +49,3 @@ class ExpenseDiscount extends Model
         return $this->belongsTo(Expense::class);
     }
 }
-
-

@@ -40,5 +40,3 @@ export default function DiscountsIndex({ discounts }: Props) {
         </AppLayout>
     );
 }
-
-

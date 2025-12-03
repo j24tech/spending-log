@@ -19,10 +19,12 @@ class Category extends Model
         'name',
         'observation',
         'tags',
+        'is_active',
     ];
 
     protected $casts = [
         'tags' => 'array',
+        'is_active' => 'boolean',
     ];
 
     /**

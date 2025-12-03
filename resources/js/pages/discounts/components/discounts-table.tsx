@@ -17,6 +17,7 @@ interface Discount {
     name: string;
     observation: string | null;
     tags: string[] | null;
+    is_active: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -36,6 +37,7 @@ export function DiscountsTable({ data }: Props) {
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Observación</TableHead>
                                 <TableHead>Etiquetas</TableHead>
+                                <TableHead>Estado</TableHead>
                                 <TableHead className="text-right">
                                     Acciones
                                 </TableHead>
@@ -45,7 +47,7 @@ export function DiscountsTable({ data }: Props) {
                             {data.data.length === 0 ? (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={4}
+                                        colSpan={5}
                                         className="text-center text-muted-foreground"
                                     >
                                         No hay tipos de descuento registrados
@@ -79,6 +81,19 @@ export function DiscountsTable({ data }: Props) {
                                                 '-'
                                             )}
                                         </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    discount.is_active
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                            >
+                                                {discount.is_active
+                                                    ? 'Activo'
+                                                    : 'Inactivo'}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <DiscountActions
                                                 discount={discount}
@@ -95,5 +110,3 @@ export function DiscountsTable({ data }: Props) {
         </div>
     );
 }
-
-

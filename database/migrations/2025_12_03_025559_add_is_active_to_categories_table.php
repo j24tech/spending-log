@@ -11,14 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('discounts', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 150);
-            $table->string('observation', 255)->nullable();
-            $table->timestamps();
-
-            // Indexes
-            $table->index('name', 'idx_discounts_name');
+        Schema::table('categories', function (Blueprint $table) {
+            $table->boolean('is_active')->default(true)->after('tags');
         });
     }
 
@@ -27,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('discounts');
+        Schema::table('categories', function (Blueprint $table) {
+            $table->dropColumn('is_active');
+        });
     }
 };

@@ -68,9 +68,7 @@ export function UserActions({ user }: Props) {
                     <DropdownMenuSeparator />
 
                     <DropdownMenuItem
-                        onClick={() =>
-                            router.visit(usersEdit.url(user.id))
-                        }
+                        onClick={() => router.visit(usersEdit.url(user.id))}
                     >
                         <Pencil className="mr-2 h-4 w-4" />
                         Editar

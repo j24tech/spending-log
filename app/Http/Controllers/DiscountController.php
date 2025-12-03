@@ -78,5 +78,3 @@ class DiscountController extends Controller
         return to_route('discounts.index')->with('success', 'Descuento eliminado correctamente.');
     }
 }
-
-

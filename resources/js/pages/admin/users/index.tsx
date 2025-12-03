@@ -3,7 +3,10 @@ import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
-import { index as usersIndex, create as usersCreate } from '@/routes/admin/users';
+import {
+    create as usersCreate,
+    index as usersIndex,
+} from '@/routes/admin/users';
 import { type Paginated } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';

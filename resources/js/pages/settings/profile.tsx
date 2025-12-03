@@ -56,8 +56,11 @@ export default function Profile({
                                         Autenticación con Google
                                     </p>
                                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                                        Usas Google para iniciar sesión. La configuración de contraseña 
-                                        y autenticación de dos factores se gestiona a través de tu cuenta de Google.
+                                        Usas Google para iniciar sesión. La
+                                        configuración de contraseña y
+                                        autenticación de dos factores se
+                                        gestiona a través de tu cuenta de
+                                        Google.
                                     </p>
                                 </div>
                             </div>

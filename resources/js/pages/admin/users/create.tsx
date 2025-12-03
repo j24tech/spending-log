@@ -172,9 +172,7 @@ export default function CreateUser() {
                                 asChild
                                 disabled={processing}
                             >
-                                <Link href={usersIndex.url()}>
-                                    Cancelar
-                                </Link>
+                                <Link href={usersIndex.url()}>Cancelar</Link>
                             </Button>
                             <Button type="submit" disabled={processing}>
                                 {processing ? 'Creando...' : 'Crear Usuario'}

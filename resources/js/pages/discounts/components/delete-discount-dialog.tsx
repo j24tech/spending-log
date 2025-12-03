@@ -32,13 +32,19 @@ export function DeleteDiscountDialog({ discount, open, onOpenChange }: Props) {
             preserveScroll: true,
             onSuccess: () => {
                 onOpenChange(false);
-                showFlash('success', 'Tipo de descuento eliminado exitosamente');
+                showFlash(
+                    'success',
+                    'Tipo de descuento eliminado exitosamente',
+                );
             },
             onError: (errors) => {
                 if (errors.discount) {
                     showFlash('error', errors.discount as string);
                 } else {
-                    showFlash('error', 'Error al eliminar el tipo de descuento');
+                    showFlash(
+                        'error',
+                        'Error al eliminar el tipo de descuento',
+                    );
                 }
             },
         });
@@ -50,9 +56,9 @@ export function DeleteDiscountDialog({ discount, open, onOpenChange }: Props) {
                 <DialogHeader>
                     <DialogTitle>Eliminar Tipo de Descuento</DialogTitle>
                     <DialogDescription>
-                        ¿Estás seguro de que deseas eliminar el tipo de descuento{' '}
-                        <strong>{discount.name}</strong>? Esta acción no se
-                        puede deshacer.
+                        ¿Estás seguro de que deseas eliminar el tipo de
+                        descuento <strong>{discount.name}</strong>? Esta acción
+                        no se puede deshacer.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -78,5 +84,3 @@ export function DeleteDiscountDialog({ discount, open, onOpenChange }: Props) {
         </Dialog>
     );
 }
-
-

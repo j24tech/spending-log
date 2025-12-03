@@ -27,8 +27,17 @@ class DiscountFactory extends Factory
         return [
             'name' => fake()->words(2, true),
             'observation' => fake()->optional()->sentence(),
+            'is_active' => true,
         ];
     }
+
+    /**
+     * Indicate that the discount is inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
+    }
 }
-
-

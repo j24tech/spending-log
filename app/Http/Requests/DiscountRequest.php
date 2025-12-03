@@ -26,6 +26,7 @@ class DiscountRequest extends FormRequest
             'observation' => ['nullable', 'string', 'max:255'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 
@@ -57,6 +58,13 @@ class DiscountRequest extends FormRequest
                 ]);
             }
         }
+
+        // Convert is_active to boolean if present
+        if ($this->has('is_active')) {
+            $this->merge([
+                'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
     }
 
     /**
@@ -78,5 +86,3 @@ class DiscountRequest extends FormRequest
         ];
     }
 }
-
-

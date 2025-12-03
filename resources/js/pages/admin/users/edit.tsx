@@ -12,7 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFlash } from '@/contexts/FlashContext';
 import AppLayout from '@/layouts/app-layout';
-import { index as usersIndex, update as usersUpdate } from '@/routes/admin/users';
+import {
+    index as usersIndex,
+    update as usersUpdate,
+} from '@/routes/admin/users';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { FormEventHandler } from 'react';
@@ -205,9 +208,7 @@ export default function EditUser({ user }: Props) {
                                 asChild
                                 disabled={processing}
                             >
-                                <Link href={usersIndex.url()}>
-                                    Cancelar
-                                </Link>
+                                <Link href={usersIndex.url()}>Cancelar</Link>
                             </Button>
                             <Button type="submit" disabled={processing}>
                                 {processing

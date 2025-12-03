@@ -20,8 +20,8 @@ import {
     ChevronDown,
     ExternalLink,
     FileText,
-    Percent,
     Pencil,
+    Percent,
     Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -181,9 +181,14 @@ export function ExpensesTable({ data, categories }: Props) {
                                                     expense.tags.length > 0 ? (
                                                         <div className="flex flex-wrap gap-1">
                                                             {expense.tags.map(
-                                                                (tag, index) => (
+                                                                (
+                                                                    tag,
+                                                                    index,
+                                                                ) => (
                                                                     <Badge
-                                                                        key={index}
+                                                                        key={
+                                                                            index
+                                                                        }
                                                                         variant="secondary"
                                                                     >
                                                                         {tag}
@@ -386,38 +391,59 @@ export function ExpensesTable({ data, categories }: Props) {
                                                             </div>
 
                                                             {/* Descuentos Aplicados */}
-                                                            {expense.expense_discounts && expense.expense_discounts.length > 0 && (
-                                                                <div className="mt-4 border-t pt-4">
-                                                                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                                                                        <Percent className="h-4 w-4" />
-                                                                        Descuentos Aplicados
-                                                                    </div>
-                                                                    <div className="grid gap-2">
-                                                                        {expense.expense_discounts.map(
-                                                                            (discount, idx) => (
-                                                                                <div
-                                                                                    key={idx}
-                                                                                    className="flex items-center justify-between rounded-md bg-red-50 px-3 py-2 text-sm dark:bg-red-950/20"
-                                                                                >
-                                                                                    <div className="flex-1">
-                                                                                        <span className="font-medium text-red-900 dark:text-red-100">
-                                                                                            {discount.discount.name}
-                                                                                        </span>
-                                                                                        {discount.observation && (
-                                                                                            <span className="ml-2 text-muted-foreground">
-                                                                                                ({discount.observation})
+                                                            {expense.expense_discounts &&
+                                                                expense
+                                                                    .expense_discounts
+                                                                    .length >
+                                                                    0 && (
+                                                                    <div className="mt-4 border-t pt-4">
+                                                                        <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                                                                            <Percent className="h-4 w-4" />
+                                                                            Descuentos
+                                                                            Aplicados
+                                                                        </div>
+                                                                        <div className="grid gap-2">
+                                                                            {expense.expense_discounts.map(
+                                                                                (
+                                                                                    discount,
+                                                                                    idx,
+                                                                                ) => (
+                                                                                    <div
+                                                                                        key={
+                                                                                            idx
+                                                                                        }
+                                                                                        className="flex items-center justify-between rounded-md bg-red-50 px-3 py-2 text-sm dark:bg-red-950/20"
+                                                                                    >
+                                                                                        <div className="flex-1">
+                                                                                            <span className="font-medium text-red-900 dark:text-red-100">
+                                                                                                {
+                                                                                                    discount
+                                                                                                        .discount
+                                                                                                        .name
+                                                                                                }
                                                                                             </span>
-                                                                                        )}
+                                                                                            {discount.observation && (
+                                                                                                <span className="ml-2 text-muted-foreground">
+                                                                                                    (
+                                                                                                    {
+                                                                                                        discount.observation
+                                                                                                    }
+                                                                                                    )
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        <span className="min-w-[80px] text-right font-medium text-red-600 dark:text-red-400">
+                                                                                            -
+                                                                                            {formatAmount(
+                                                                                                discount.discount_amount,
+                                                                                            )}
+                                                                                        </span>
                                                                                     </div>
-                                                                                    <span className="min-w-[80px] text-right font-medium text-red-600 dark:text-red-400">
-                                                                                        -{formatAmount(discount.discount_amount)}
-                                                                                    </span>
-                                                                                </div>
-                                                                            ),
-                                                                        )}
+                                                                                ),
+                                                                            )}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            )}
+                                                                )}
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>

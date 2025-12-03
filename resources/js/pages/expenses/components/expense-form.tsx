@@ -83,7 +83,12 @@ interface Props {
     };
 }
 
-export function ExpenseForm({ categories, paymentMethods, discounts, expense }: Props) {
+export function ExpenseForm({
+    categories,
+    paymentMethods,
+    discounts,
+    expense,
+}: Props) {
     const isEditing = !!expense;
     const { showFlash } = useFlash();
 
@@ -209,9 +214,7 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                         ? null
                         : sourceData.document_number || null;
                 transformed.tags =
-                    sourceData.tags === ''
-                        ? null
-                        : sourceData.tags || null;
+                    sourceData.tags === '' ? null : sourceData.tags || null;
 
                 // Serialize details array properly for FormData
                 // In FormData, arrays must be properly serialized for Laravel to parse them correctly
@@ -256,50 +259,55 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                     Array.isArray(sourceData.expense_discounts) &&
                     sourceData.expense_discounts.length > 0
                 ) {
-                    transformed.expense_discounts = sourceData.expense_discounts.map(
-                        (discount: ExpenseDiscount) => {
-                            const discountObj: any = {
-                                discount_id: String(discount.discount_id || ''),
-                                discount_amount: String(
-                                    discount.discount_amount || '0',
-                                ),
-                                _destroy: discount._destroy || false,
-                            };
+                    transformed.expense_discounts =
+                        sourceData.expense_discounts.map(
+                            (discount: ExpenseDiscount) => {
+                                const discountObj: any = {
+                                    discount_id: String(
+                                        discount.discount_id || '',
+                                    ),
+                                    discount_amount: String(
+                                        discount.discount_amount || '0',
+                                    ),
+                                    _destroy: discount._destroy || false,
+                                };
 
-                            // Only include id if it exists (for updates)
-                            if (discount.id) {
-                                discountObj.id = String(discount.id);
-                            }
-
-                            // Include date - ensure it's in YYYY-MM-DD format
-                            if (discount.date) {
-                                const dateStr = String(discount.date);
-                                if (dateStr.includes('/')) {
-                                    // Format: DD/MM/YYYY -> YYYY-MM-DD
-                                    const [day, month, year] = dateStr.split('/');
-                                    discountObj.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                                } else {
-                                    discountObj.date = dateStr;
+                                // Only include id if it exists (for updates)
+                                if (discount.id) {
+                                    discountObj.id = String(discount.id);
                                 }
-                            } else {
-                                // Default to current date if not provided
-                                const today = new Date();
-                                discountObj.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                            }
 
-                            // Only include observation if it's not empty
-                            if (
-                                discount.observation &&
-                                discount.observation.trim() !== ''
-                            ) {
-                                discountObj.observation = discount.observation;
-                            } else {
-                                discountObj.observation = null;
-                            }
+                                // Include date - ensure it's in YYYY-MM-DD format
+                                if (discount.date) {
+                                    const dateStr = String(discount.date);
+                                    if (dateStr.includes('/')) {
+                                        // Format: DD/MM/YYYY -> YYYY-MM-DD
+                                        const [day, month, year] =
+                                            dateStr.split('/');
+                                        discountObj.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                                    } else {
+                                        discountObj.date = dateStr;
+                                    }
+                                } else {
+                                    // Default to current date if not provided
+                                    const today = new Date();
+                                    discountObj.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                                }
 
-                            return discountObj;
-                        },
-                    );
+                                // Only include observation if it's not empty
+                                if (
+                                    discount.observation &&
+                                    discount.observation.trim() !== ''
+                                ) {
+                                    discountObj.observation =
+                                        discount.observation;
+                                } else {
+                                    discountObj.observation = null;
+                                }
+
+                                return discountObj;
+                            },
+                        );
                 } else {
                     transformed.expense_discounts = [];
                 }
@@ -528,7 +536,7 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
         const activeDiscounts = data.expense_discounts.filter(
             (d) => !d._destroy,
         );
-        
+
         const hasZeroDiscount = activeDiscounts.some(
             (discount) =>
                 !discount.discount_id ||
@@ -694,13 +702,11 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
         const activeDiscounts = data.expense_discounts.filter(
             (d) => !d._destroy,
         );
-        
-        const hasZeroDiscount = activeDiscounts.some(
-            (discount) => {
-                const amount = parseFloat(discount.discount_amount || '0');
-                return amount <= 0;
-            }
-        );
+
+        const hasZeroDiscount = activeDiscounts.some((discount) => {
+            const amount = parseFloat(discount.discount_amount || '0');
+            return amount <= 0;
+        });
 
         if (hasZeroDiscount) {
             showFlash(
@@ -730,32 +736,37 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                 observation: data.observation ?? expense.observation ?? '',
                 document_number:
                     data.document_number ?? expense.document_number ?? '',
-                tags: data.tags ?? (expense.tags ? expense.tags.join(', ') : '') ?? '',
-                    details:
-                        data.details && data.details.length > 0
-                            ? data.details
-                            : expense.expense_details.map((d) => ({
-                                  id: d.id,
-                                  name: d.name,
-                                  amount: d.amount,
-                                  quantity: Math.floor(
-                                      parseFloat(d.quantity) || 1,
-                                  ).toString(),
-                                  observation: d.observation || '',
-                                  category_id: d.category_id.toString(),
-                                  _destroy: false,
-                              })),
-                    expense_discounts:
-                        data.expense_discounts && data.expense_discounts.length > 0
-                            ? data.expense_discounts
-                            : (expense.expense_discounts?.map((ed) => ({
-                                  id: ed.id,
-                                  discount_id: ed.discount_id.toString(),
-                                  observation: ed.observation || '',
-                                  discount_amount: ed.discount_amount,
-                                  date: formatDateForInput(ed.date) || getCurrentDate(),
-                                  _destroy: false,
-                              })) || []),
+                tags:
+                    data.tags ??
+                    (expense.tags ? expense.tags.join(', ') : '') ??
+                    '',
+                details:
+                    data.details && data.details.length > 0
+                        ? data.details
+                        : expense.expense_details.map((d) => ({
+                              id: d.id,
+                              name: d.name,
+                              amount: d.amount,
+                              quantity: Math.floor(
+                                  parseFloat(d.quantity) || 1,
+                              ).toString(),
+                              observation: d.observation || '',
+                              category_id: d.category_id.toString(),
+                              _destroy: false,
+                          })),
+                expense_discounts:
+                    data.expense_discounts && data.expense_discounts.length > 0
+                        ? data.expense_discounts
+                        : expense.expense_discounts?.map((ed) => ({
+                              id: ed.id,
+                              discount_id: ed.discount_id.toString(),
+                              observation: ed.observation || '',
+                              discount_amount: ed.discount_amount,
+                              date:
+                                  formatDateForInput(ed.date) ||
+                                  getCurrentDate(),
+                              _destroy: false,
+                          })) || [],
                 document: data.document, // Keep the file
             };
 
@@ -819,43 +830,43 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                 },
             );
 
-                    // Serialize expense_discounts array for FormData
-                    if (completeData.expense_discounts) {
-                        completeData.expense_discounts.forEach(
-                            (discount: ExpenseDiscount, index: number) => {
-                                if (discount.id) {
-                                    formData.append(
-                                        `expense_discounts[${index}][id]`,
-                                        String(discount.id),
-                                    );
-                                }
-                                formData.append(
-                                    `expense_discounts[${index}][discount_id]`,
-                                    discount.discount_id,
-                                );
-                                formData.append(
-                                    `expense_discounts[${index}][discount_amount]`,
-                                    discount.discount_amount,
-                                );
-                                // Include date - ensure it's in YYYY-MM-DD format
-                                const dateValue = discount.date || getCurrentDate();
-                                formData.append(
-                                    `expense_discounts[${index}][date]`,
-                                    dateValue,
-                                );
-                                if (discount.observation) {
-                                    formData.append(
-                                        `expense_discounts[${index}][observation]`,
-                                        discount.observation,
-                                    );
-                                }
-                                formData.append(
-                                    `expense_discounts[${index}][_destroy]`,
-                                    discount._destroy ? '1' : '0',
-                                );
-                            },
+            // Serialize expense_discounts array for FormData
+            if (completeData.expense_discounts) {
+                completeData.expense_discounts.forEach(
+                    (discount: ExpenseDiscount, index: number) => {
+                        if (discount.id) {
+                            formData.append(
+                                `expense_discounts[${index}][id]`,
+                                String(discount.id),
+                            );
+                        }
+                        formData.append(
+                            `expense_discounts[${index}][discount_id]`,
+                            discount.discount_id,
                         );
-                    }
+                        formData.append(
+                            `expense_discounts[${index}][discount_amount]`,
+                            discount.discount_amount,
+                        );
+                        // Include date - ensure it's in YYYY-MM-DD format
+                        const dateValue = discount.date || getCurrentDate();
+                        formData.append(
+                            `expense_discounts[${index}][date]`,
+                            dateValue,
+                        );
+                        if (discount.observation) {
+                            formData.append(
+                                `expense_discounts[${index}][observation]`,
+                                discount.observation,
+                            );
+                        }
+                        formData.append(
+                            `expense_discounts[${index}][_destroy]`,
+                            discount._destroy ? '1' : '0',
+                        );
+                    },
+                );
+            }
 
             // Use router.post directly with FormData
             router.post(`/expenses/${expense.id}`, formData, {
@@ -921,35 +932,35 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                     );
                 });
 
-                    // Serialize expense_discounts array for FormData
-                    data.expense_discounts.forEach(
-                        (discount: ExpenseDiscount, index: number) => {
-                            if (discount.id) {
-                                formData.append(
-                                    `expense_discounts[${index}][id]`,
-                                    String(discount.id),
-                                );
-                            }
+                // Serialize expense_discounts array for FormData
+                data.expense_discounts.forEach(
+                    (discount: ExpenseDiscount, index: number) => {
+                        if (discount.id) {
                             formData.append(
-                                `expense_discounts[${index}][discount_id]`,
-                                discount.discount_id,
+                                `expense_discounts[${index}][id]`,
+                                String(discount.id),
                             );
+                        }
+                        formData.append(
+                            `expense_discounts[${index}][discount_id]`,
+                            discount.discount_id,
+                        );
+                        formData.append(
+                            `expense_discounts[${index}][discount_amount]`,
+                            discount.discount_amount,
+                        );
+                        if (discount.observation) {
                             formData.append(
-                                `expense_discounts[${index}][discount_amount]`,
-                                discount.discount_amount,
+                                `expense_discounts[${index}][observation]`,
+                                discount.observation,
                             );
-                            if (discount.observation) {
-                                formData.append(
-                                    `expense_discounts[${index}][observation]`,
-                                    discount.observation,
-                                );
-                            }
-                            formData.append(
-                                `expense_discounts[${index}][_destroy]`,
-                                discount._destroy ? '1' : '0',
-                            );
-                        },
-                    );
+                        }
+                        formData.append(
+                            `expense_discounts[${index}][_destroy]`,
+                            discount._destroy ? '1' : '0',
+                        );
+                    },
+                );
 
                 router.post(`/expenses/${expense.id}`, formData, {
                     forceFormData: true,
@@ -1072,15 +1083,9 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                         <Input
                             id="tags"
                             value={data.tags}
-                            onChange={(e) =>
-                                setData('tags', e.target.value)
-                            }
+                            onChange={(e) => setData('tags', e.target.value)}
                             placeholder="Ej: chile, jesus, deuda (separadas por comas)"
-                            className={
-                                errors.tags
-                                    ? 'border-destructive'
-                                    : ''
-                            }
+                            className={errors.tags ? 'border-destructive' : ''}
                         />
                         <p className="text-sm text-muted-foreground">
                             Separa las etiquetas con comas
@@ -1148,15 +1153,27 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-destructive">
-                                                            Descuento {discountNumber}
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-destructive"
+                                                        >
+                                                            Descuento{' '}
+                                                            {discountNumber}
                                                         </Badge>
                                                         <p className="font-medium text-destructive line-through">
-                                                            {(discounts || []).find((d) => d.id.toString() === discount.discount_id)?.name || 'Descuento'}
+                                                            {(
+                                                                discounts || []
+                                                            ).find(
+                                                                (d) =>
+                                                                    d.id.toString() ===
+                                                                    discount.discount_id,
+                                                            )?.name ||
+                                                                'Descuento'}
                                                         </p>
                                                     </div>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Este descuento será eliminado al guardar
+                                                        Este descuento será
+                                                        eliminado al guardar
                                                     </p>
                                                 </div>
                                             </div>
@@ -1164,7 +1181,9 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => restoreDiscount(index)}
+                                                onClick={() =>
+                                                    restoreDiscount(index)
+                                                }
                                             >
                                                 Restaurar
                                             </Button>
@@ -1172,207 +1191,249 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                     ) : (
                                         // Modo normal - Mostrar campos editables
                                         <div className="space-y-3">
-                                            <div className="flex items-center gap-2 mb-2">
+                                            <div className="mb-2 flex items-center gap-2">
                                                 <Badge variant="secondary">
                                                     Descuento {discountNumber}
                                                 </Badge>
                                             </div>
                                             <div className="grid gap-3 md:grid-cols-12">
-                                            <div className="space-y-1 md:col-span-4">
-                                                <Label className="text-xs">
-                                                    Tipo de Descuento *
-                                                </Label>
-                                                <Select
-                                                    value={discount.discount_id}
-                                                    onValueChange={(value) =>
-                                                        updateDiscount(
-                                                            index,
-                                                            'discount_id',
+                                                <div className="space-y-1 md:col-span-4">
+                                                    <Label className="text-xs">
+                                                        Tipo de Descuento *
+                                                    </Label>
+                                                    <Select
+                                                        value={
+                                                            discount.discount_id
+                                                        }
+                                                        onValueChange={(
                                                             value,
-                                                        )
-                                                    }
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Seleccionar descuento" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {(discounts || []).map(
-                                                            (disc) => (
+                                                        ) =>
+                                                            updateDiscount(
+                                                                index,
+                                                                'discount_id',
+                                                                value,
+                                                            )
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Seleccionar descuento" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {(
+                                                                discounts || []
+                                                            ).map((disc) => (
                                                                 <SelectItem
-                                                                    key={disc.id}
+                                                                    key={
+                                                                        disc.id
+                                                                    }
                                                                     value={disc.id.toString()}
                                                                 >
                                                                     {disc.name}
                                                                 </SelectItem>
-                                                            ),
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            `expense_discounts.${index}.discount_id` as keyof typeof errors
-                                                        ]
-                                                    }
-                                                />
-                                            </div>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <InputError
+                                                        message={
+                                                            errors[
+                                                                `expense_discounts.${index}.discount_id` as keyof typeof errors
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
 
-                                            <div className="space-y-1 md:col-span-3">
-                                                <Label className="text-xs">
-                                                    Monto del Descuento *
-                                                </Label>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    value={discount.discount_amount}
-                                                    onChange={(e) =>
-                                                        updateDiscount(
-                                                            index,
-                                                            'discount_amount',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="0.00"
-                                                    className={
-                                                        (() => {
-                                                            const subtotal = calculateSubtotal();
-                                                            const discountAmount = parseFloat(discount.discount_amount) || 0;
-                                                            return discountAmount > subtotal
+                                                <div className="space-y-1 md:col-span-3">
+                                                    <Label className="text-xs">
+                                                        Monto del Descuento *
+                                                    </Label>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={
+                                                            discount.discount_amount
+                                                        }
+                                                        onChange={(e) =>
+                                                            updateDiscount(
+                                                                index,
+                                                                'discount_amount',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="0.00"
+                                                        className={
+                                                            (() => {
+                                                                const subtotal =
+                                                                    calculateSubtotal();
+                                                                const discountAmount =
+                                                                    parseFloat(
+                                                                        discount.discount_amount,
+                                                                    ) || 0;
+                                                                return discountAmount >
+                                                                    subtotal
+                                                                    ? 'border-destructive'
+                                                                    : '';
+                                                            })() ||
+                                                            errors[
+                                                                `expense_discounts.${index}.discount_amount` as keyof typeof errors
+                                                            ]
                                                                 ? 'border-destructive'
-                                                                : '';
-                                                        })() ||
-                                                        errors[
-                                                            `expense_discounts.${index}.discount_amount` as keyof typeof errors
-                                                        ]
-                                                            ? 'border-destructive'
-                                                            : ''
-                                                    }
-                                                />
-                                                {(() => {
-                                                    const subtotal = calculateSubtotal();
-                                                    const discountAmount = parseFloat(discount.discount_amount) || 0;
-                                                    const errorMessage =
-                                                        errors[
-                                                            `expense_discounts.${index}.discount_amount` as keyof typeof errors
-                                                        ];
-                                                    
-                                                    if (errorMessage) {
-                                                        return <InputError message={errorMessage} />;
-                                                    }
-                                                    
-                                                    if (discountAmount > subtotal && discountAmount > 0) {
-                                                        return (
-                                                            <InputError
-                                                                message={`El monto del descuento (${discountAmount.toFixed(2)}) no puede ser mayor que el subtotal del gasto (${subtotal.toFixed(2)}).`}
-                                                            />
-                                                        );
-                                                    }
-                                                    
-                                                    return null;
-                                                })()}
+                                                                : ''
+                                                        }
+                                                    />
+                                                    {(() => {
+                                                        const subtotal =
+                                                            calculateSubtotal();
+                                                        const discountAmount =
+                                                            parseFloat(
+                                                                discount.discount_amount,
+                                                            ) || 0;
+                                                        const errorMessage =
+                                                            errors[
+                                                                `expense_discounts.${index}.discount_amount` as keyof typeof errors
+                                                            ];
+
+                                                        if (errorMessage) {
+                                                            return (
+                                                                <InputError
+                                                                    message={
+                                                                        errorMessage
+                                                                    }
+                                                                />
+                                                            );
+                                                        }
+
+                                                        if (
+                                                            discountAmount >
+                                                                subtotal &&
+                                                            discountAmount > 0
+                                                        ) {
+                                                            return (
+                                                                <InputError
+                                                                    message={`El monto del descuento (${discountAmount.toFixed(2)}) no puede ser mayor que el subtotal del gasto (${subtotal.toFixed(2)}).`}
+                                                                />
+                                                            );
+                                                        }
+
+                                                        return null;
+                                                    })()}
+                                                </div>
+
+                                                <div className="space-y-1 md:col-span-2">
+                                                    <Label className="text-xs">
+                                                        Fecha *
+                                                    </Label>
+                                                    <Input
+                                                        type="date"
+                                                        value={
+                                                            discount.date ||
+                                                            getCurrentDate()
+                                                        }
+                                                        onChange={(e) =>
+                                                            updateDiscount(
+                                                                index,
+                                                                'date',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors[
+                                                                `expense_discounts.${index}.date` as keyof typeof errors
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div className="flex items-end md:col-span-1">
+                                                    {data.expense_discounts.filter(
+                                                        (d) => !d._destroy,
+                                                    ).length > 0 && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                removeDiscount(
+                                                                    index,
+                                                                )
+                                                            }
+                                                            className="text-destructive hover:text-destructive"
+                                                            title={
+                                                                discount.id
+                                                                    ? 'Marcar para eliminar'
+                                                                    : 'Eliminar descuento'
+                                                            }
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <div className="space-y-1 md:col-span-2">
+                                            {/* Observación opcional para cada descuento */}
+                                            <div className="space-y-1">
                                                 <Label className="text-xs">
-                                                    Fecha *
+                                                    Observación del descuento
                                                 </Label>
                                                 <Input
-                                                    type="date"
-                                                    value={discount.date || getCurrentDate()}
+                                                    value={discount.observation}
                                                     onChange={(e) =>
                                                         updateDiscount(
                                                             index,
-                                                            'date',
+                                                            'observation',
                                                             e.target.value,
                                                         )
                                                     }
+                                                    placeholder="Descripción adicional (opcional)"
+                                                    className="text-sm"
                                                 />
                                                 <InputError
                                                     message={
                                                         errors[
-                                                            `expense_discounts.${index}.date` as keyof typeof errors
+                                                            `expense_discounts.${index}.observation` as keyof typeof errors
                                                         ]
                                                     }
                                                 />
                                             </div>
-
-                                            <div className="flex items-end md:col-span-1">
-                                                {data.expense_discounts.filter(
-                                                    (d) => !d._destroy,
-                                                ).length > 0 && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            removeDiscount(index)
-                                                        }
-                                                        className="text-destructive hover:text-destructive"
-                                                        title={
-                                                            discount.id
-                                                                ? 'Marcar para eliminar'
-                                                                : 'Eliminar descuento'
-                                                        }
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
                                         </div>
-
-                                        {/* Observación opcional para cada descuento */}
-                                        <div className="space-y-1">
-                                            <Label className="text-xs">
-                                                Observación del descuento
-                                            </Label>
-                                            <Input
-                                                value={discount.observation}
-                                                onChange={(e) =>
-                                                    updateDiscount(
-                                                        index,
-                                                        'observation',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Descripción adicional (opcional)"
-                                                className="text-sm"
-                                            />
-                                            <InputError
-                                                message={
-                                                    errors[
-                                                        `expense_discounts.${index}.observation` as keyof typeof errors
-                                                    ]
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                    )}
+                                </CardContent>
+                            </Card>
                         );
                     })}
 
-                    {data.expense_discounts.filter((d) => !d._destroy).length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">
+                    {data.expense_discounts.filter((d) => !d._destroy)
+                        .length === 0 && (
+                        <p className="py-4 text-center text-sm text-muted-foreground">
                             No tiene descuentos aplicados
                         </p>
                     )}
 
-                    {data.expense_discounts.filter((d) => !d._destroy).length > 0 && (
+                    {data.expense_discounts.filter((d) => !d._destroy).length >
+                        0 && (
                         <div className="flex justify-end border-t pt-4">
                             <div className="space-y-1 text-right">
                                 <div className="flex items-center justify-between gap-8 text-sm">
                                     <span className="text-muted-foreground">
                                         Total Descuentos (
                                         {
-                                            data.expense_discounts.filter((d) => !d._destroy)
-                                                .length
+                                            data.expense_discounts.filter(
+                                                (d) => !d._destroy,
+                                            ).length
                                         }{' '}
-                                        descuento{data.expense_discounts.filter((d) => !d._destroy).length !== 1 ? 's' : ''})
+                                        descuento
+                                        {data.expense_discounts.filter(
+                                            (d) => !d._destroy,
+                                        ).length !== 1
+                                            ? 's'
+                                            : ''}
+                                        )
                                     </span>
                                     <span className="font-medium text-red-600 dark:text-red-400">
-                                        -${calculateAppliedDiscounts().toFixed(2)}
+                                        -$
+                                        {calculateAppliedDiscounts().toFixed(2)}
                                     </span>
                                 </div>
                             </div>
@@ -1425,7 +1486,10 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-destructive">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-destructive"
+                                                        >
                                                             Ítem {itemNumber}
                                                         </Badge>
                                                         <p className="font-medium text-destructive line-through">
@@ -1433,8 +1497,8 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                                         </p>
                                                     </div>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Este ítem será eliminado al
-                                                        guardar
+                                                        Este ítem será eliminado
+                                                        al guardar
                                                     </p>
                                                 </div>
                                             </div>
@@ -1442,7 +1506,9 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => restoreDetail(index)}
+                                                onClick={() =>
+                                                    restoreDetail(index)
+                                                }
                                             >
                                                 Restaurar
                                             </Button>
@@ -1450,244 +1516,253 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                     ) : (
                                         // Modo normal - Mostrar campos editables
                                         <div className="space-y-3">
-                                            <div className="flex items-center gap-2 mb-2">
+                                            <div className="mb-2 flex items-center gap-2">
                                                 <Badge variant="secondary">
                                                     Ítem {itemNumber}
                                                 </Badge>
                                             </div>
                                             <div className="grid gap-3 md:grid-cols-12">
-                                            <div className="space-y-1 md:col-span-4">
-                                                <Label className="text-xs">
-                                                    Descripción *
-                                                </Label>
-                                                <Input
-                                                    value={detail.name}
-                                                    onChange={(e) =>
-                                                        updateDetail(
-                                                            index,
-                                                            'name',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Nombre del ítem"
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            `details.${index}.name` as keyof typeof errors
-                                                        ]
-                                                    }
-                                                />
-                                            </div>
+                                                <div className="space-y-1 md:col-span-4">
+                                                    <Label className="text-xs">
+                                                        Descripción *
+                                                    </Label>
+                                                    <Input
+                                                        value={detail.name}
+                                                        onChange={(e) =>
+                                                            updateDetail(
+                                                                index,
+                                                                'name',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="Nombre del ítem"
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors[
+                                                                `details.${index}.name` as keyof typeof errors
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
 
-                                            <div className="space-y-1 md:col-span-2">
-                                                <Label className="text-xs">
-                                                    Categoría *
-                                                </Label>
-                                                <Select
-                                                    value={detail.category_id}
-                                                    onValueChange={(value) =>
-                                                        updateDetail(
-                                                            index,
-                                                            'category_id',
+                                                <div className="space-y-1 md:col-span-2">
+                                                    <Label className="text-xs">
+                                                        Categoría *
+                                                    </Label>
+                                                    <Select
+                                                        value={
+                                                            detail.category_id
+                                                        }
+                                                        onValueChange={(
                                                             value,
-                                                        )
-                                                    }
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Categoría" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {categories.map(
-                                                            (category) => (
-                                                                <SelectItem
-                                                                    key={
-                                                                        category.id
-                                                                    }
-                                                                    value={category.id.toString()}
-                                                                >
-                                                                    {
-                                                                        category.name
-                                                                    }
-                                                                </SelectItem>
-                                                            ),
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            `details.${index}.category_id` as keyof typeof errors
-                                                        ]
-                                                    }
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1 md:col-span-2">
-                                                <Label className="text-xs">
-                                                    Cantidad *
-                                                </Label>
-                                                <Input
-                                                    type="number"
-                                                    step="1"
-                                                    min="1"
-                                                    value={Math.floor(
-                                                        parseFloat(
-                                                            detail.quantity,
-                                                        ) || 1,
-                                                    ).toString()}
-                                                    onChange={(e) => {
-                                                        // Only allow integers (no decimals)
-                                                        const value =
-                                                            e.target.value;
-                                                        if (
-                                                            value === '' ||
-                                                            /^\d+$/.test(value)
-                                                        ) {
+                                                        ) =>
                                                             updateDetail(
                                                                 index,
-                                                                'quantity',
+                                                                'category_id',
                                                                 value,
-                                                            );
-                                                        }
-                                                    }}
-                                                    onBlur={(e) => {
-                                                        // Ensure minimum value of 1 when field loses focus and remove decimals
-                                                        const value =
-                                                            e.target.value;
-                                                        if (
-                                                            value === '' ||
-                                                            parseFloat(value) <
-                                                                1
-                                                        ) {
-                                                            updateDetail(
-                                                                index,
-                                                                'quantity',
-                                                                '1',
-                                                            );
-                                                        } else {
-                                                            // Remove decimals if user entered them
-                                                            const intValue =
-                                                                Math.floor(
-                                                                    parseFloat(
-                                                                        value,
-                                                                    ),
-                                                                );
-                                                            updateDetail(
-                                                                index,
-                                                                'quantity',
-                                                                intValue.toString(),
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            `details.${index}.quantity` as keyof typeof errors
-                                                        ]
-                                                    }
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1 md:col-span-2">
-                                                <Label className="text-xs">
-                                                    Precio Unit. *
-                                                </Label>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    value={detail.amount}
-                                                    onChange={(e) =>
-                                                        updateDetail(
-                                                            index,
-                                                            'amount',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                />
-                                                <InputError
-                                                    message={
-                                                        errors[
-                                                            `details.${index}.amount` as keyof typeof errors
-                                                        ]
-                                                    }
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1 md:col-span-1">
-                                                <Label className="text-xs">
-                                                    Subtotal
-                                                </Label>
-                                                <Input
-                                                    value={(
-                                                        (parseFloat(
-                                                            detail.amount,
-                                                        ) || 0) *
-                                                        (parseFloat(
-                                                            detail.quantity,
-                                                        ) || 0)
-                                                    ).toFixed(2)}
-                                                    readOnly
-                                                    className="bg-muted font-medium"
-                                                />
-                                            </div>
-
-                                            <div className="flex items-end md:col-span-1">
-                                                {(data.details.filter(
-                                                    (d) => !d._destroy,
-                                                ).length > 1 ||
-                                                    !detail.id) && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            removeDetail(index)
-                                                        }
-                                                        className="text-destructive hover:text-destructive"
-                                                        title={
-                                                            detail.id
-                                                                ? 'Marcar para eliminar'
-                                                                : 'Eliminar ítem'
+                                                            )
                                                         }
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                )}
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Categoría" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {categories.map(
+                                                                (category) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            category.id
+                                                                        }
+                                                                        value={category.id.toString()}
+                                                                    >
+                                                                        {
+                                                                            category.name
+                                                                        }
+                                                                    </SelectItem>
+                                                                ),
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <InputError
+                                                        message={
+                                                            errors[
+                                                                `details.${index}.category_id` as keyof typeof errors
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-1 md:col-span-2">
+                                                    <Label className="text-xs">
+                                                        Cantidad *
+                                                    </Label>
+                                                    <Input
+                                                        type="number"
+                                                        step="1"
+                                                        min="1"
+                                                        value={Math.floor(
+                                                            parseFloat(
+                                                                detail.quantity,
+                                                            ) || 1,
+                                                        ).toString()}
+                                                        onChange={(e) => {
+                                                            // Only allow integers (no decimals)
+                                                            const value =
+                                                                e.target.value;
+                                                            if (
+                                                                value === '' ||
+                                                                /^\d+$/.test(
+                                                                    value,
+                                                                )
+                                                            ) {
+                                                                updateDetail(
+                                                                    index,
+                                                                    'quantity',
+                                                                    value,
+                                                                );
+                                                            }
+                                                        }}
+                                                        onBlur={(e) => {
+                                                            // Ensure minimum value of 1 when field loses focus and remove decimals
+                                                            const value =
+                                                                e.target.value;
+                                                            if (
+                                                                value === '' ||
+                                                                parseFloat(
+                                                                    value,
+                                                                ) < 1
+                                                            ) {
+                                                                updateDetail(
+                                                                    index,
+                                                                    'quantity',
+                                                                    '1',
+                                                                );
+                                                            } else {
+                                                                // Remove decimals if user entered them
+                                                                const intValue =
+                                                                    Math.floor(
+                                                                        parseFloat(
+                                                                            value,
+                                                                        ),
+                                                                    );
+                                                                updateDetail(
+                                                                    index,
+                                                                    'quantity',
+                                                                    intValue.toString(),
+                                                                );
+                                                            }
+                                                        }}
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors[
+                                                                `details.${index}.quantity` as keyof typeof errors
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-1 md:col-span-2">
+                                                    <Label className="text-xs">
+                                                        Precio Unit. *
+                                                    </Label>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={detail.amount}
+                                                        onChange={(e) =>
+                                                            updateDetail(
+                                                                index,
+                                                                'amount',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            errors[
+                                                                `details.${index}.amount` as keyof typeof errors
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-1 md:col-span-1">
+                                                    <Label className="text-xs">
+                                                        Subtotal
+                                                    </Label>
+                                                    <Input
+                                                        value={(
+                                                            (parseFloat(
+                                                                detail.amount,
+                                                            ) || 0) *
+                                                            (parseFloat(
+                                                                detail.quantity,
+                                                            ) || 0)
+                                                        ).toFixed(2)}
+                                                        readOnly
+                                                        className="bg-muted font-medium"
+                                                    />
+                                                </div>
+
+                                                <div className="flex items-end md:col-span-1">
+                                                    {(data.details.filter(
+                                                        (d) => !d._destroy,
+                                                    ).length > 1 ||
+                                                        !detail.id) && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                removeDetail(
+                                                                    index,
+                                                                )
+                                                            }
+                                                            className="text-destructive hover:text-destructive"
+                                                            title={
+                                                                detail.id
+                                                                    ? 'Marcar para eliminar'
+                                                                    : 'Eliminar ítem'
+                                                            }
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Observación opcional para cada ítem */}
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">
+                                                    Observación del ítem
+                                                </Label>
+                                                <Input
+                                                    value={detail.observation}
+                                                    onChange={(e) =>
+                                                        updateDetail(
+                                                            index,
+                                                            'observation',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Descripción adicional (opcional)"
+                                                    className="text-sm"
+                                                />
+                                                <InputError
+                                                    message={
+                                                        errors[
+                                                            `details.${index}.observation` as keyof typeof errors
+                                                        ]
+                                                    }
+                                                />
                                             </div>
                                         </div>
-
-                                        {/* Observación opcional para cada ítem */}
-                                        <div className="space-y-1">
-                                            <Label className="text-xs">
-                                                Observación del ítem
-                                            </Label>
-                                            <Input
-                                                value={detail.observation}
-                                                onChange={(e) =>
-                                                    updateDetail(
-                                                        index,
-                                                        'observation',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Descripción adicional (opcional)"
-                                                className="text-sm"
-                                            />
-                                            <InputError
-                                                message={
-                                                    errors[
-                                                        `details.${index}.observation` as keyof typeof errors
-                                                    ]
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                    )}
+                                </CardContent>
+                            </Card>
                         );
                     })}
 
@@ -1706,13 +1781,21 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                     ${calculateSubtotal().toFixed(2)}
                                 </span>
                             </div>
-                            {data.expense_discounts.filter((d) => !d._destroy).length > 0 && (
+                            {data.expense_discounts.filter((d) => !d._destroy)
+                                .length > 0 && (
                                 <div className="flex items-center justify-between gap-8 text-sm">
                                     <span className="text-muted-foreground">
-                                        Descuentos Aplicados ({data.expense_discounts.filter((d) => !d._destroy).length})
+                                        Descuentos Aplicados (
+                                        {
+                                            data.expense_discounts.filter(
+                                                (d) => !d._destroy,
+                                            ).length
+                                        }
+                                        )
                                     </span>
                                     <span className="font-medium text-red-600">
-                                        -${calculateAppliedDiscounts().toFixed(2)}
+                                        -$
+                                        {calculateAppliedDiscounts().toFixed(2)}
                                     </span>
                                 </div>
                             )}
@@ -1724,9 +1807,22 @@ export function ExpenseForm({ categories, paymentMethods, discounts, expense }: 
                                     ${calculateTotal().toFixed(2)}
                                 </span>
                             </div>
-                            {(data.details.some((d) => d._destroy) || data.expense_discounts.some((d) => d._destroy)) && (
+                            {(data.details.some((d) => d._destroy) ||
+                                data.expense_discounts.some(
+                                    (d) => d._destroy,
+                                )) && (
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                    {data.details.filter((d) => d._destroy).length} ítem(s) y {data.expense_discounts.filter((d) => d._destroy).length} descuento(s) marcado(s) para eliminar
+                                    {
+                                        data.details.filter((d) => d._destroy)
+                                            .length
+                                    }{' '}
+                                    ítem(s) y{' '}
+                                    {
+                                        data.expense_discounts.filter(
+                                            (d) => d._destroy,
+                                        ).length
+                                    }{' '}
+                                    descuento(s) marcado(s) para eliminar
                                 </p>
                             )}
                         </div>

@@ -19,6 +19,7 @@ class Discount extends Model
         'name',
         'observation',
         'tags',
+        'is_active',
     ];
 
     /**
@@ -28,6 +29,7 @@ class Discount extends Model
      */
     protected $casts = [
         'tags' => 'array',
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -38,5 +40,3 @@ class Discount extends Model
         return $this->hasMany(ExpenseDiscount::class);
     }
 }
-
-

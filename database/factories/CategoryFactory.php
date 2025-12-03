@@ -18,6 +18,17 @@ class CategoryFactory extends Factory
     {
         return [
             'name' => fake()->words(2, true),
+            'is_active' => true,
         ];
+    }
+
+    /**
+     * Indicate that the category is inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
     }
 }

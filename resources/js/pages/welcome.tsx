@@ -1,4 +1,4 @@
-import { dashboard, home, login } from '@/routes';
+import { dashboard, login } from '@/routes';
 import categories from '@/routes/categories';
 import expenses from '@/routes/expenses';
 import { type SharedData } from '@/types';
@@ -52,14 +52,14 @@ export default function Welcome() {
                             <div className="space-y-4">
                                 <Link
                                     href={expenses.index.url()}
-                                    className="group flex items-center gap-2 text-base font-medium text-orange-500 hover:text-orange-400 transition-colors"
+                                    className="group flex items-center gap-2 text-base font-medium text-orange-500 transition-colors hover:text-orange-400"
                                 >
                                     <span>Ver el Tablero de Gastos</span>
                                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </Link>
                                 <Link
                                     href={categories.index.url()}
-                                    className="group flex items-center gap-2 text-base font-medium text-orange-500 hover:text-orange-400 transition-colors"
+                                    className="group flex items-center gap-2 text-base font-medium text-orange-500 transition-colors hover:text-orange-400"
                                 >
                                     <span>Gestionar Categorías y Medios</span>
                                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -70,14 +70,14 @@ export default function Welcome() {
                                 {auth.user ? (
                                     <Link
                                         href={expenses.index.url()}
-                                        className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-medium text-black shadow-sm transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                                        className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-medium text-black shadow-sm transition-colors hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none"
                                     >
                                         Comienza Ahora
                                     </Link>
                                 ) : (
                                     <Link
                                         href={login.url()}
-                                        className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-medium text-black shadow-sm transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                                        className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-medium text-black shadow-sm transition-colors hover:bg-white/90 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none"
                                     >
                                         Comienza Ahora
                                     </Link>
@@ -86,12 +86,12 @@ export default function Welcome() {
                         </div>
 
                         {/* Right Section - Illustration */}
-                        <div className="relative hidden lg:flex items-center justify-center">
+                        <div className="relative hidden items-center justify-center lg:flex">
                             <div className="relative w-full max-w-lg">
                                 <img
                                     src="/spending-log.png"
                                     alt="Ilustración financiera"
-                                    className="relative z-10 w-full h-full object-contain"
+                                    className="relative z-10 h-full w-full object-contain"
                                 />
                             </div>
                         </div>

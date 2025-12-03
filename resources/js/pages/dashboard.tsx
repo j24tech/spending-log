@@ -1,4 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     ChartConfig,
     ChartContainer,
@@ -13,10 +20,18 @@ import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Bar, BarChart, Cell, LabelList, Pie, PieChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { DollarSign, FileText, List } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Calendar, DollarSign, FileText, List } from 'lucide-react';
+import {
+    Bar,
+    BarChart,
+    Cell,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    XAxis,
+    YAxis,
+} from 'recharts';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -33,7 +48,11 @@ interface Statistics {
 
 interface ChartData {
     expenses_by_day: Array<{ date: string; total: number }>;
-    expense_details_by_percentage: Array<{ name: string; value: number; percentage: number }>;
+    expense_details_by_percentage: Array<{
+        name: string;
+        value: number;
+        percentage: number;
+    }>;
     expenses_by_category: Array<{ name: string; value: number }>;
     expenses_by_payment_method: Array<{ name: string; value: number }>;
     expenses_by_discount: Array<{ name: string; value: number }>;
@@ -87,7 +106,8 @@ const createPieChartConfig = (
     const config: ChartConfig = {};
     const total = data.reduce((sum, item) => sum + item.value, 0);
     data.forEach((item, index) => {
-        const percentage = item.percentage ?? (total > 0 ? (item.value / total) * 100 : 0);
+        const percentage =
+            item.percentage ?? (total > 0 ? (item.value / total) * 100 : 0);
         config[item.name] = {
             label: `${item.name}: ${formatCurrency(item.value)} (${percentage.toFixed(1)}%)`,
             color: pieChartColors[index % pieChartColors.length],
@@ -172,7 +192,10 @@ export default function Dashboard({
                                     }
                                 />
                             </div>
-                            <Button onClick={handleFilterChange} className="md:w-auto">
+                            <Button
+                                onClick={handleFilterChange}
+                                className="md:w-auto"
+                            >
                                 Aplicar Filtros
                             </Button>
                         </div>
@@ -238,7 +261,8 @@ export default function Dashboard({
                     <CardHeader>
                         <CardTitle>Gastos Totales por Día</CardTitle>
                         <CardDescription>
-                            Distribución de gastos diarios en el período seleccionado
+                            Distribución de gastos diarios en el período
+                            seleccionado
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -299,7 +323,9 @@ export default function Dashboard({
                     {/* Principales Detalles de Gastos */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Principales Detalles de Gastos</CardTitle>
+                            <CardTitle>
+                                Principales Detalles de Gastos
+                            </CardTitle>
                             <CardDescription>
                                 Top 10 detalles con mayor monto (por porcentaje)
                             </CardDescription>
@@ -328,7 +354,9 @@ export default function Dashboard({
                                                                         data.value,
                                                                     )}{' '}
                                                                     (
-                                                                    {data.percentage}
+                                                                    {
+                                                                        data.percentage
+                                                                    }
                                                                     %)
                                                                 </p>
                                                             </div>
@@ -339,7 +367,9 @@ export default function Dashboard({
                                             }}
                                         />
                                         <Pie
-                                            data={charts.expense_details_by_percentage}
+                                            data={
+                                                charts.expense_details_by_percentage
+                                            }
                                             dataKey="value"
                                             nameKey="name"
                                             cx="50%"
@@ -404,11 +434,13 @@ export default function Dashboard({
                                                 if (active && payload?.length) {
                                                     const data =
                                                         payload[0].payload;
-                                                    const total = charts.expenses_by_category.reduce(
-                                                        (sum, item) =>
-                                                            sum + item.value,
-                                                        0,
-                                                    );
+                                                    const total =
+                                                        charts.expenses_by_category.reduce(
+                                                            (sum, item) =>
+                                                                sum +
+                                                                item.value,
+                                                            0,
+                                                        );
                                                     const percentage =
                                                         total > 0
                                                             ? (
@@ -427,7 +459,9 @@ export default function Dashboard({
                                                                     {formatCurrency(
                                                                         data.value,
                                                                     )}{' '}
-                                                                    ({percentage}%)
+                                                                    (
+                                                                    {percentage}
+                                                                    %)
                                                                 </p>
                                                             </div>
                                                         </ChartTooltipContent>
@@ -444,7 +478,11 @@ export default function Dashboard({
                                             cy="50%"
                                             outerRadius={100}
                                             innerRadius={30}
-                                            label={({ name, value, percent }) => {
+                                            label={({
+                                                name,
+                                                value,
+                                                percent,
+                                            }) => {
                                                 if (percent > 0.05) {
                                                     return `${(percent * 100).toFixed(1)}%`;
                                                 }
@@ -501,7 +539,8 @@ export default function Dashboard({
                                                     const total =
                                                         charts.expenses_by_payment_method.reduce(
                                                             (sum, item) =>
-                                                                sum + item.value,
+                                                                sum +
+                                                                item.value,
                                                             0,
                                                         );
                                                     const percentage =
@@ -522,7 +561,9 @@ export default function Dashboard({
                                                                     {formatCurrency(
                                                                         data.value,
                                                                     )}{' '}
-                                                                    ({percentage}%)
+                                                                    (
+                                                                    {percentage}
+                                                                    %)
                                                                 </p>
                                                             </div>
                                                         </ChartTooltipContent>
@@ -532,14 +573,20 @@ export default function Dashboard({
                                             }}
                                         />
                                         <Pie
-                                            data={charts.expenses_by_payment_method}
+                                            data={
+                                                charts.expenses_by_payment_method
+                                            }
                                             dataKey="value"
                                             nameKey="name"
                                             cx="50%"
                                             cy="50%"
                                             outerRadius={100}
                                             innerRadius={30}
-                                            label={({ name, value, percent }) => {
+                                            label={({
+                                                name,
+                                                value,
+                                                percent,
+                                            }) => {
                                                 if (percent > 0.05) {
                                                     return `${(percent * 100).toFixed(1)}%`;
                                                 }
@@ -596,7 +643,8 @@ export default function Dashboard({
                                                     const total =
                                                         charts.expenses_by_discount.reduce(
                                                             (sum, item) =>
-                                                                sum + item.value,
+                                                                sum +
+                                                                item.value,
                                                             0,
                                                         );
                                                     const percentage =
@@ -617,7 +665,9 @@ export default function Dashboard({
                                                                     {formatCurrency(
                                                                         data.value,
                                                                     )}{' '}
-                                                                    ({percentage}%)
+                                                                    (
+                                                                    {percentage}
+                                                                    %)
                                                                 </p>
                                                             </div>
                                                         </ChartTooltipContent>
@@ -634,7 +684,11 @@ export default function Dashboard({
                                             cy="50%"
                                             outerRadius={100}
                                             innerRadius={30}
-                                            label={({ name, value, percent }) => {
+                                            label={({
+                                                name,
+                                                value,
+                                                percent,
+                                            }) => {
                                                 if (percent > 0.05) {
                                                     return `${(percent * 100).toFixed(1)}%`;
                                                 }

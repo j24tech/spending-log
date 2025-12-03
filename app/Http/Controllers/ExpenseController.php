@@ -62,9 +62,9 @@ class ExpenseController extends Controller
      */
     public function create(): Response
     {
-        $categories = Category::orderBy('name')->get();
-        $paymentMethods = PaymentMethod::orderBy('name')->get();
-        $discounts = Discount::orderBy('name')->get();
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('name')->get();
+        $discounts = Discount::where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('expenses/create', [
             'categories' => $categories,
@@ -106,9 +106,9 @@ class ExpenseController extends Controller
     {
         $expense->load(['expenseDetails.category', 'expenseDiscounts.discount', 'paymentMethod']);
 
-        $categories = Category::orderBy('name')->get();
-        $paymentMethods = PaymentMethod::orderBy('name')->get();
-        $discounts = Discount::orderBy('name')->get();
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('name')->get();
+        $discounts = Discount::where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('expenses/edit', [
             'expense' => $expense,

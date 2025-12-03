@@ -2,11 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
-use App\Models\Discount;
 use App\Models\Expense;
 use App\Models\ExpenseDetail;
-use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,11 +21,11 @@ class DashboardController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        if (!$startDate) {
+        if (! $startDate) {
             $startDate = $defaultStartDate;
         }
 
-        if (!$endDate) {
+        if (! $endDate) {
             $endDate = $defaultEndDate;
         }
 
@@ -127,6 +124,7 @@ class DashboardController extends Controller
             ->groupBy('payment_method_id')
             ->map(function ($methodExpenses, $paymentMethodId) {
                 $paymentMethod = $methodExpenses->first()->paymentMethod;
+
                 return [
                     'name' => $paymentMethod->name ?? 'Sin método de pago',
                     'value' => $methodExpenses->sum('total'),
@@ -172,4 +170,3 @@ class DashboardController extends Controller
         ]);
     }
 }
-

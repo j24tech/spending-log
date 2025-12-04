@@ -134,7 +134,6 @@ export function ExpenseForm({
             payment_method_id: expense?.payment_method_id
                 ? expense.payment_method_id.toString()
                 : '',
-            tags: expense?.tags ? expense.tags.join(', ') : '',
             details:
                 expense?.expense_details.map((d) => ({
                     id: d.id,
@@ -213,8 +212,6 @@ export function ExpenseForm({
                     sourceData.document_number === ''
                         ? null
                         : sourceData.document_number || null;
-                transformed.tags =
-                    sourceData.tags === '' ? null : sourceData.tags || null;
 
                 // Serialize details array properly for FormData
                 // In FormData, arrays must be properly serialized for Laravel to parse them correctly
@@ -736,10 +733,6 @@ export function ExpenseForm({
                 observation: data.observation ?? expense.observation ?? '',
                 document_number:
                     data.document_number ?? expense.document_number ?? '',
-                tags:
-                    data.tags ??
-                    (expense.tags ? expense.tags.join(', ') : '') ??
-                    '',
                 details:
                     data.details && data.details.length > 0
                         ? data.details
@@ -795,7 +788,6 @@ export function ExpenseForm({
                 'document_number',
                 completeData.document_number || '',
             );
-            formData.append('tags', completeData.tags || '');
             formData.append('document', completeData.document);
 
             // Serialize details array for FormData
@@ -1079,18 +1071,24 @@ export function ExpenseForm({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="tags">Etiquetas</Label>
-                        <Input
-                            id="tags"
-                            value={data.tags}
-                            onChange={(e) => setData('tags', e.target.value)}
-                            placeholder="Ej: chile, jesus, deuda (separadas por comas)"
-                            className={errors.tags ? 'border-destructive' : ''}
-                        />
-                        <p className="text-sm text-muted-foreground">
-                            Separa las etiquetas con comas
-                        </p>
-                        <InputError message={errors.tags} />
+                        <Label>Etiquetas</Label>
+                        <div className="min-h-[2.5rem] rounded-md border bg-muted/50 p-3">
+                            {expense?.tags && expense.tags.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                    {expense.tags.map((tag, index) => (
+                                        <Badge key={index} variant="secondary">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Las etiquetas se calculan automáticamente
+                                    desde las categorías, método de pago y
+                                    descuentos
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="space-y-2">

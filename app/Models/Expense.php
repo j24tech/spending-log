@@ -23,7 +23,6 @@ class Expense extends Model
         'document_number',
         'document_path',
         'payment_method_id',
-        'tags',
     ];
 
     /**
@@ -33,7 +32,15 @@ class Expense extends Model
      */
     protected $casts = [
         'expense_date' => 'date:Y-m-d',
-        'tags' => 'array',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'tags',
     ];
 
     /**
@@ -81,5 +88,42 @@ class Expense extends Model
     public function getTotalDiscountsAttribute(): float
     {
         return $this->expenseDiscounts->sum('discount_amount');
+    }
+
+    /**
+     * Get tags from related entities (categories, payment method, discounts).
+     * Tags are read-only and calculated dynamically from related entities.
+     */
+    public function getTagsAttribute(): ?array
+    {
+        $tags = [];
+
+        // Get tags from categories (through expense details)
+        if ($this->relationLoaded('expenseDetails')) {
+            foreach ($this->expenseDetails as $detail) {
+                if ($detail->relationLoaded('category') && $detail->category && $detail->category->tags) {
+                    $tags = array_merge($tags, $detail->category->tags);
+                }
+            }
+        }
+
+        // Get tags from payment method
+        if ($this->relationLoaded('paymentMethod') && $this->paymentMethod && $this->paymentMethod->tags) {
+            $tags = array_merge($tags, $this->paymentMethod->tags);
+        }
+
+        // Get tags from discounts (through expense discounts)
+        if ($this->relationLoaded('expenseDiscounts')) {
+            foreach ($this->expenseDiscounts as $expenseDiscount) {
+                if ($expenseDiscount->relationLoaded('discount') && $expenseDiscount->discount && $expenseDiscount->discount->tags) {
+                    $tags = array_merge($tags, $expenseDiscount->discount->tags);
+                }
+            }
+        }
+
+        // Remove duplicates and empty values
+        $tags = array_values(array_unique(array_filter($tags)));
+
+        return empty($tags) ? null : $tags;
     }
 }

@@ -29,8 +29,6 @@ class ExpenseRequest extends FormRequest
             'document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'], // 5MB max
             'delete_document' => ['nullable', 'boolean'],
             'payment_method_id' => ['required', 'exists:payment_methods,id'],
-            'tags' => ['nullable', 'array'],
-            'tags.*' => ['string', 'max:50'],
             'details' => ['required', 'array', 'min:1'],
             'details.*.id' => ['nullable', 'integer', 'exists:expense_details,id'],
             'details.*.name' => ['required_if:details.*._destroy,false', 'string', 'max:150'],
@@ -96,9 +94,6 @@ class ExpenseRequest extends FormRequest
             'expense_discounts.*.date.date' => 'La fecha del descuento debe ser una fecha válida.',
             'expense_discounts.*.observation.string' => 'La observación del descuento debe ser texto.',
             'expense_discounts.*.observation.max' => 'La observación del descuento no puede tener más de 255 caracteres.',
-            'tags.array' => 'Las etiquetas deben ser un arreglo válido.',
-            'tags.*.string' => 'Cada etiqueta debe ser texto.',
-            'tags.*.max' => 'Cada etiqueta no puede tener más de 50 caracteres.',
         ];
     }
 
@@ -134,25 +129,6 @@ class ExpenseRequest extends FormRequest
                 ? ($this->input('delete_document') === '1' || $this->input('delete_document') === true || $this->input('delete_document') === 'true')
                 : false,
         ]);
-
-        // Convert tags string to array for validation and storage
-        // Input: "chile, jesus, deuda" -> Output: ["chile", "jesus", "deuda"]
-        if ($this->has('tags')) {
-            if (is_string($this->tags)) {
-                $tagsArray = array_filter(
-                    array_map('trim', explode(',', $this->tags)),
-                    fn ($tag) => ! empty($tag)
-                );
-
-                $this->merge([
-                    'tags' => ! empty($tagsArray) ? $tagsArray : null,
-                ]);
-            } elseif (empty($this->tags)) {
-                $this->merge([
-                    'tags' => null,
-                ]);
-            }
-        }
 
         // Ensure at least one detail is not marked for deletion
         $details = $this->input('details', []);

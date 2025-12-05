@@ -15,16 +15,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { useFlash } from '@/contexts/FlashContext';
 import { Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
-import { FormEventHandler, useEffect, useRef, useState } from 'react';
+import { FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Category {
     id: number;
     name: string;
+    tags?: string[] | null;
 }
 
 interface PaymentMethod {
     id: number;
     name: string;
+    tags?: string[] | null;
 }
 
 interface ExpenseDetail {
@@ -50,6 +52,7 @@ interface Discount {
     id: number;
     name: string;
     observation: string | null;
+    tags?: string[] | null;
 }
 
 interface Props {
@@ -322,6 +325,65 @@ export function ExpenseForm({
             },
         },
     );
+
+    // Calculate tags dynamically from selected entities
+    const calculatedTags = useMemo(() => {
+        const tags: string[] = [];
+
+        // Get tags from categories (from expense details)
+        data.details.forEach((detail) => {
+            if (
+                detail.category_id &&
+                !detail._destroy &&
+                detail.category_id !== ''
+            ) {
+                const category = categories.find(
+                    (c) => c.id.toString() === detail.category_id.toString(),
+                );
+                if (category?.tags && category.tags.length > 0) {
+                    tags.push(...category.tags);
+                }
+            }
+        });
+
+        // Get tags from payment method
+        if (data.payment_method_id && data.payment_method_id !== '') {
+            const paymentMethod = paymentMethods.find(
+                (pm) => pm.id.toString() === data.payment_method_id.toString(),
+            );
+            if (paymentMethod?.tags && paymentMethod.tags.length > 0) {
+                tags.push(...paymentMethod.tags);
+            }
+        }
+
+        // Get tags from discounts (from expense discounts)
+        data.expense_discounts.forEach((expenseDiscount) => {
+            if (
+                expenseDiscount.discount_id &&
+                !expenseDiscount._destroy &&
+                expenseDiscount.discount_id !== ''
+            ) {
+                const discount = discounts.find(
+                    (d) =>
+                        d.id.toString() ===
+                        expenseDiscount.discount_id.toString(),
+                );
+                if (discount?.tags && discount.tags.length > 0) {
+                    tags.push(...discount.tags);
+                }
+            }
+        });
+
+        // Remove duplicates and empty values
+        return Array.from(new Set(tags.filter((tag) => tag.trim() !== '')));
+    }, [
+        data.details,
+        data.payment_method_id,
+        data.expense_discounts,
+        categories,
+        paymentMethods,
+        discounts,
+    ]);
 
     const [fileName, setFileName] = useState<string>('');
     // Track if user wants to delete existing document
@@ -1073,9 +1135,9 @@ export function ExpenseForm({
                     <div className="space-y-2">
                         <Label>Etiquetas</Label>
                         <div className="min-h-[2.5rem] rounded-md border bg-muted/50 p-3">
-                            {expense?.tags && expense.tags.length > 0 ? (
+                            {calculatedTags.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
-                                    {expense.tags.map((tag, index) => (
+                                    {calculatedTags.map((tag, index) => (
                                         <Badge key={index} variant="secondary">
                                             {tag}
                                         </Badge>

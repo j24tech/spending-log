@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
+import { index as aboutIndex } from '@/routes/about';
 import { edit as editPassword } from '@/routes/password';
 import { edit } from '@/routes/profile';
 import { show } from '@/routes/two-factor';
@@ -47,6 +48,13 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
         baseItems.push({
             title: 'Appearance',
             href: editAppearance(),
+            icon: null,
+        });
+
+        // Acerca de siempre disponible
+        baseItems.push({
+            title: 'Acerca de',
+            href: aboutIndex(),
             icon: null,
         });
 

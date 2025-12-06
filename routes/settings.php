@@ -28,4 +28,6 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');
     })->name('appearance.edit');
+
+    Route::get('settings/about', [\App\Http\Controllers\Settings\AboutController::class, 'index'])->name('about.index');
 });

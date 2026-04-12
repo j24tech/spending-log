@@ -88,7 +88,7 @@ class ExpenseController extends Controller
 
             $this->expenseService->createExpense($data);
 
-            return to_route('expenses.index');
+            return to_route('expenses.index')->with('success', 'Gasto creado exitosamente');
         } catch (\Exception $e) {
             \Log::error('Error creating expense', [
                 'error' => $e->getMessage(),
@@ -162,7 +162,7 @@ class ExpenseController extends Controller
 
             $this->expenseService->updateExpense($expense, $data);
 
-            return to_route('expenses.index');
+            return to_route('expenses.index')->with('success', 'Gasto actualizado exitosamente');
         } catch (\Exception $e) {
             \Log::error('Error updating expense', [
                 'expense_id' => $expense->id,
@@ -182,7 +182,7 @@ class ExpenseController extends Controller
         try {
             $this->expenseService->deleteExpense($expense);
 
-            return to_route('expenses.index');
+            return to_route('expenses.index')->with('success', 'Gasto eliminado exitosamente');
         } catch (\Exception $e) {
             \Log::error('Error deleting expense', [
                 'expense_id' => $expense->id,

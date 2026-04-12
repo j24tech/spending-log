@@ -53,9 +53,9 @@ class ExpenseApiController extends Controller
 
         // Manejar imagen del documento
         if ($request->hasFile('document')) {
-            // Eliminar imagen anterior si existe
+            // Eliminar imagen anterior si existe (mismo disco que store())
             if ($expense->document_path) {
-                Storage::delete($expense->document_path);
+                Storage::disk('public')->delete($expense->document_path);
             }
 
             // Guardar nueva imagen
@@ -65,9 +65,9 @@ class ExpenseApiController extends Controller
         }
 
         // Eliminar imagen si se solicita
-        if ($request->has('delete_document') && $validated['delete_document']) {
+        if ($request->has('delete_document') && ($validated['delete_document'] ?? false)) {
             if ($expense->document_path) {
-                Storage::delete($expense->document_path);
+                Storage::disk('public')->delete($expense->document_path);
                 $expense->document_path = null;
                 $updated = true;
             }

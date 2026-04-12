@@ -67,7 +67,7 @@ test('puede actualizar el número de documento', function () {
     ]);
 
     $response = $this->withToken($this->token)
-        ->postJson('/api/expenses/{expense->id}/document', [
+        ->postJson("/api/expenses/{$expense->id}/document", [
             'document_number' => 'FACTURA-2025-001',
         ]);
 

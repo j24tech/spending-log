@@ -145,9 +145,15 @@ export function ExpensesTable({ data, categories }: Props) {
                                 </TableRow>
                             </TableBody>
                         ) : (
-                            data.data.map((expense) => (
+                            data.data.map((expense, index) => (
                                 <Collapsible key={expense.id} asChild>
-                                    <TableBody>
+                                    <TableBody
+                                        className={
+                                            index === data.data.length - 1
+                                                ? undefined
+                                                : '[&_tr:last-child]:border-b'
+                                        }
+                                    >
                                         <TableRow>
                                                 <TableCell>
                                                     <CollapsibleTrigger asChild>

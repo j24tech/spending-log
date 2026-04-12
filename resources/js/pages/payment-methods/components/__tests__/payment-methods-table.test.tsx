@@ -3,6 +3,16 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PaymentMethodsTable } from '../payment-methods-table';
 
+interface PaymentMethod {
+    id: number;
+    name: string;
+    observation: string | null;
+    tags: string[] | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
 // Mock the child components
 vi.mock('../payment-method-actions', () => ({
     PaymentMethodActions: () => (
@@ -15,7 +25,7 @@ vi.mock('@/components/pagination', () => ({
 }));
 
 describe('PaymentMethodsTable', () => {
-    const mockPaginatedData: Paginated<any> = {
+    const mockPaginatedData: Paginated<PaymentMethod> = {
         data: [],
         links: [],
         meta: {
@@ -39,7 +49,7 @@ describe('PaymentMethodsTable', () => {
     });
 
     it('renders payment methods table with data', () => {
-        const data: Paginated<any> = {
+        const data: Paginated<PaymentMethod> = {
             ...mockPaginatedData,
             data: [
                 {
@@ -47,6 +57,7 @@ describe('PaymentMethodsTable', () => {
                     name: 'Efectivo',
                     observation: 'Pago en efectivo',
                     tags: null,
+                    is_active: true,
                     created_at: '2024-01-01T00:00:00Z',
                     updated_at: '2024-01-01T00:00:00Z',
                 },
@@ -55,6 +66,7 @@ describe('PaymentMethodsTable', () => {
                     name: 'Tarjeta de Débito',
                     observation: null,
                     tags: null,
+                    is_active: true,
                     created_at: '2024-01-01T00:00:00Z',
                     updated_at: '2024-01-01T00:00:00Z',
                 },
@@ -89,7 +101,7 @@ describe('PaymentMethodsTable', () => {
     });
 
     it('renders actions for each payment method', () => {
-        const data: Paginated<any> = {
+        const data: Paginated<PaymentMethod> = {
             ...mockPaginatedData,
             data: [
                 {
@@ -97,6 +109,7 @@ describe('PaymentMethodsTable', () => {
                     name: 'Efectivo',
                     observation: null,
                     tags: null,
+                    is_active: true,
                     created_at: '2024-01-01T00:00:00Z',
                     updated_at: '2024-01-01T00:00:00Z',
                 },

@@ -3,6 +3,39 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExpensesTable } from '../expenses-table';
 
+interface Category {
+    id: number;
+    name: string;
+}
+
+interface ExpenseDetail {
+    id: number;
+    name: string;
+    amount: string;
+    quantity: string;
+    observation: string | null;
+    category: Category;
+    category_id: number;
+}
+
+interface PaymentMethod {
+    id: number;
+    name: string;
+}
+
+interface Expense {
+    id: number;
+    name: string;
+    expense_date: string;
+    observation: string | null;
+    document_number: string | null;
+    document_path: string | null;
+    tags: string[] | null;
+    expense_details: ExpenseDetail[];
+    payment_method: PaymentMethod;
+    total: number;
+}
+
 // Mock the child components
 vi.mock('../expense-actions', () => ({
     ExpenseActions: () => <div data-testid="expense-actions">Actions</div>,
@@ -13,7 +46,7 @@ vi.mock('@/components/pagination', () => ({
 }));
 
 describe('ExpensesTable', () => {
-    const mockPaginatedData: Paginated<any> = {
+    const mockPaginatedData: Paginated<Expense> = {
         data: [],
         links: [],
         meta: {
@@ -41,7 +74,7 @@ describe('ExpensesTable', () => {
     });
 
     it('renders expenses table with data', () => {
-        const data: Paginated<any> = {
+        const data: Paginated<Expense> = {
             ...mockPaginatedData,
             data: [
                 {
@@ -50,7 +83,8 @@ describe('ExpensesTable', () => {
                     expense_date: '2024-01-15',
                     observation: null,
                     document_number: null,
-                    document_path: undefined,
+                    document_path: null,
+                    tags: null,
                     payment_method: {
                         id: 1,
                         name: 'Efectivo',
@@ -91,7 +125,7 @@ describe('ExpensesTable', () => {
     });
 
     it('renders actions for each expense', () => {
-        const data: Paginated<any> = {
+        const data: Paginated<Expense> = {
             ...mockPaginatedData,
             data: [
                 {
@@ -100,7 +134,8 @@ describe('ExpensesTable', () => {
                     expense_date: '2024-01-15',
                     observation: null,
                     document_number: null,
-                    document_path: undefined,
+                    document_path: null,
+                    tags: null,
                     payment_method: {
                         id: 1,
                         name: 'Efectivo',
@@ -122,7 +157,7 @@ describe('ExpensesTable', () => {
     });
 
     it('renders collapsible rows for expenses with details', () => {
-        const data: Paginated<any> = {
+        const data: Paginated<Expense> = {
             ...mockPaginatedData,
             data: [
                 {
@@ -131,7 +166,8 @@ describe('ExpensesTable', () => {
                     expense_date: '2024-01-15',
                     observation: null,
                     document_number: null,
-                    document_path: undefined,
+                    document_path: null,
+                    tags: null,
                     payment_method: {
                         id: 1,
                         name: 'Efectivo',
@@ -165,7 +201,7 @@ describe('ExpensesTable', () => {
     });
 
     it('does not render document link when document_path is null', () => {
-        const data: Paginated<any> = {
+        const data: Paginated<Expense> = {
             ...mockPaginatedData,
             data: [
                 {
@@ -175,6 +211,7 @@ describe('ExpensesTable', () => {
                     observation: null,
                     document_number: null,
                     document_path: null,
+                    tags: null,
                     payment_method: {
                         id: 1,
                         name: 'Efectivo',

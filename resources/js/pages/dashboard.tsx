@@ -376,11 +376,7 @@ export default function Dashboard({
                                             cy="50%"
                                             outerRadius={100}
                                             innerRadius={30}
-                                            label={({
-                                                name,
-                                                percentage,
-                                                value,
-                                            }) => {
+                                            label={({ percentage }) => {
                                                 if (percentage > 5) {
                                                     return `${percentage.toFixed(1)}%`;
                                                 }
@@ -478,11 +474,7 @@ export default function Dashboard({
                                             cy="50%"
                                             outerRadius={100}
                                             innerRadius={30}
-                                            label={({
-                                                name,
-                                                value,
-                                                percent,
-                                            }) => {
+                                            label={({ percent }) => {
                                                 if (percent > 0.05) {
                                                     return `${(percent * 100).toFixed(1)}%`;
                                                 }
@@ -582,11 +574,7 @@ export default function Dashboard({
                                             cy="50%"
                                             outerRadius={100}
                                             innerRadius={30}
-                                            label={({
-                                                name,
-                                                value,
-                                                percent,
-                                            }) => {
+                                            label={({ percent }) => {
                                                 if (percent > 0.05) {
                                                     return `${(percent * 100).toFixed(1)}%`;
                                                 }
@@ -684,11 +672,7 @@ export default function Dashboard({
                                             cy="50%"
                                             outerRadius={100}
                                             innerRadius={30}
-                                            label={({
-                                                name,
-                                                value,
-                                                percent,
-                                            }) => {
+                                            label={({ percent }) => {
                                                 if (percent > 0.05) {
                                                     return `${(percent * 100).toFixed(1)}%`;
                                                 }

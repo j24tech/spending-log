@@ -344,8 +344,18 @@ export function ExpenseForm({
     });
     }, [setFormTransform]);
 
-    const details: ExpenseDetail[] = data['details'] ?? [];
-    const expenseDiscounts: ExpenseDiscount[] = data['expense_discounts'] ?? [];
+    const details: ExpenseDetail[] = useMemo(
+        () =>
+            (Array.isArray(data.details) ? data.details : []) as ExpenseDetail[],
+        [data.details],
+    );
+    const expenseDiscounts: ExpenseDiscount[] = useMemo(
+        () =>
+            (Array.isArray(data.expense_discounts)
+                ? data.expense_discounts
+                : []) as ExpenseDiscount[],
+        [data.expense_discounts],
+    );
 
     // Calculate tags dynamically from selected entities
     const calculatedTags = useMemo(() => {
@@ -483,6 +493,8 @@ export function ExpenseForm({
                 });
             }
         }
+        // Solo sincronizar cuando cambia el archivo; ampliar deps re-ejecutaría al editar otros campos.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional
     }, [data.document, isEditing, expense, isSubmittingWithFile]);
 
     // Update preview URL when document changes (new file selected or removed)

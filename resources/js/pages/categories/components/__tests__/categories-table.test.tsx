@@ -1,7 +1,17 @@
 import { type Paginated } from '@/types';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CategoriesTable } from '../categories-table';
+
+interface Category {
+    id: number;
+    name: string;
+    observation: string | null;
+    tags: string[] | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
 
 // Mock the child components
 vi.mock('../category-actions', () => ({
@@ -13,7 +23,7 @@ vi.mock('@/components/pagination', () => ({
 }));
 
 describe('CategoriesTable', () => {
-    const mockPaginatedData: Paginated<any> = {
+    const mockPaginatedData: Paginated<Category> = {
         data: [],
         links: [],
         meta: {
@@ -37,13 +47,15 @@ describe('CategoriesTable', () => {
     });
 
     it('renders categories table with data', () => {
-        const data: Paginated<any> = {
+        const data: Paginated<Category> = {
             ...mockPaginatedData,
             data: [
                 {
                     id: 1,
                     name: 'Alimentación',
                     observation: 'Comida y bebidas',
+                    tags: null,
+                    is_active: true,
                     created_at: '2024-01-01T00:00:00Z',
                     updated_at: '2024-01-01T00:00:00Z',
                 },
@@ -51,6 +63,8 @@ describe('CategoriesTable', () => {
                     id: 2,
                     name: 'Transporte',
                     observation: null,
+                    tags: null,
+                    is_active: true,
                     created_at: '2024-01-01T00:00:00Z',
                     updated_at: '2024-01-01T00:00:00Z',
                 },
@@ -66,7 +80,8 @@ describe('CategoriesTable', () => {
         expect(screen.getByText('Alimentación')).toBeInTheDocument();
         expect(screen.getByText('Comida y bebidas')).toBeInTheDocument();
         expect(screen.getByText('Transporte')).toBeInTheDocument();
-        expect(screen.getByText('-')).toBeInTheDocument(); // null observation
+        // Observación y etiquetas vacías se muestran como "-"
+        expect(screen.getAllByText('-').length).toBeGreaterThanOrEqual(1);
     });
 
     it('renders table headers correctly', () => {
@@ -84,13 +99,15 @@ describe('CategoriesTable', () => {
     });
 
     it('renders actions for each category', () => {
-        const data: Paginated<any> = {
+        const data: Paginated<Category> = {
             ...mockPaginatedData,
             data: [
                 {
                     id: 1,
                     name: 'Alimentación',
                     observation: null,
+                    tags: null,
+                    is_active: true,
                     created_at: '2024-01-01T00:00:00Z',
                     updated_at: '2024-01-01T00:00:00Z',
                 },

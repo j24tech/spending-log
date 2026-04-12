@@ -1,5 +1,6 @@
 import * as useToast from '@/hooks/use-toast';
 import * as usePage from '@inertiajs/react';
+import type { Page } from '@inertiajs/core';
 import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlashProvider } from '../../contexts/FlashContext';
@@ -34,7 +35,7 @@ describe('FlashMessages', () => {
                     success: 'Gasto creado exitosamente',
                 },
             },
-        } as any);
+        } as unknown as Page);
 
         render(
             <FlashProvider>
@@ -58,7 +59,7 @@ describe('FlashMessages', () => {
                     error: 'Error al crear el gasto',
                 },
             },
-        } as any);
+        } as unknown as Page);
 
         render(
             <FlashProvider>
@@ -82,7 +83,7 @@ describe('FlashMessages', () => {
                     info: 'Información importante',
                 },
             },
-        } as any);
+        } as unknown as Page);
 
         render(
             <FlashProvider>
@@ -104,7 +105,7 @@ describe('FlashMessages', () => {
             props: {
                 flash: {},
             },
-        } as any);
+        } as unknown as Page);
 
         render(
             <FlashProvider>
@@ -124,7 +125,7 @@ describe('FlashMessages', () => {
                     info: 'Información adicional',
                 },
             },
-        } as any);
+        } as unknown as Page);
 
         render(
             <FlashProvider>

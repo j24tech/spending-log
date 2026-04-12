@@ -68,7 +68,7 @@ export function EditDetailDialog({
                 category_id: detail.category_id.toString(),
             });
         }
-    }, [open, detail]);
+    }, [open, detail, setData]);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();

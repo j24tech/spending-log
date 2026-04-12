@@ -40,6 +40,12 @@ describe('ExpenseForm', () => {
         { id: 2, name: 'Tarjeta de Débito' },
     ];
 
+    const mockDiscounts: Array<{
+        id: number;
+        name: string;
+        observation: string | null;
+    }> = [];
+
     const mockExpense = {
         id: 1,
         name: 'Gasto Original',
@@ -48,7 +54,7 @@ describe('ExpenseForm', () => {
         document_number: null,
         document_path: null,
         payment_method_id: 1,
-        discount: '0.00',
+        tags: null as string[] | null,
         expense_details: [
             {
                 id: 1,
@@ -71,6 +77,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                 />,
             );
 
@@ -85,10 +92,11 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                 />,
             );
 
-            const dateInput = screen.getByDisplayValue(/2024|2025/i);
+            const dateInput = screen.getByDisplayValue(/\d{4}-\d{2}-\d{2}/);
             expect(dateInput).toBeInTheDocument();
         });
 
@@ -97,6 +105,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                 />,
             );
 
@@ -113,6 +122,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                     expense={mockExpense}
                 />,
             );
@@ -129,6 +139,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                     expense={mockExpense}
                 />,
             );
@@ -145,6 +156,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                     expense={mockExpense}
                 />,
             );
@@ -163,6 +175,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                 />,
             );
 
@@ -182,6 +195,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                     expense={mockExpense}
                 />,
             );
@@ -203,6 +217,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                     expense={mockExpense}
                 />,
             );
@@ -218,6 +233,7 @@ describe('ExpenseForm', () => {
                 <ExpenseForm
                     categories={mockCategories}
                     paymentMethods={mockPaymentMethods}
+                    discounts={mockDiscounts}
                     expense={mockExpense}
                 />,
             );

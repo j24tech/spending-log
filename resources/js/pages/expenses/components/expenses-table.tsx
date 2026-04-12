@@ -133,8 +133,8 @@ export function ExpensesTable({ data, categories }: Props) {
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
-                        <TableBody>
-                            {data.data.length === 0 ? (
+                        {data.data.length === 0 ? (
+                            <TableBody>
                                 <TableRow>
                                     <TableCell
                                         colSpan={8}
@@ -143,11 +143,12 @@ export function ExpensesTable({ data, categories }: Props) {
                                         No hay gastos registrados
                                     </TableCell>
                                 </TableRow>
-                            ) : (
-                                data.data.map((expense) => (
-                                    <Collapsible key={expense.id} asChild>
-                                        <>
-                                            <TableRow>
+                            </TableBody>
+                        ) : (
+                            data.data.map((expense) => (
+                                <Collapsible key={expense.id} asChild>
+                                    <TableBody>
+                                        <TableRow>
                                                 <TableCell>
                                                     <CollapsibleTrigger asChild>
                                                         <Button
@@ -449,11 +450,10 @@ export function ExpensesTable({ data, categories }: Props) {
                                                     </TableCell>
                                                 </TableRow>
                                             </CollapsibleContent>
-                                        </>
-                                    </Collapsible>
-                                ))
-                            )}
-                        </TableBody>
+                                    </TableBody>
+                                </Collapsible>
+                            ))
+                        )}
                     </Table>
                 </CardContent>
 

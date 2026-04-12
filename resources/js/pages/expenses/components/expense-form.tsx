@@ -15,7 +15,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useFlash } from '@/contexts/FlashContext';
 import { Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
-import { FormEventHandler, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    FormEventHandler,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 
 interface Category {
     id: number;
@@ -87,13 +94,14 @@ interface Props {
 }
 
 export function ExpenseForm({
-    categories,
-    paymentMethods,
-    discounts,
+    categories = [],
+    paymentMethods = [],
+    discounts = [],
     expense,
 }: Props) {
     const isEditing = !!expense;
     const { showFlash } = useFlash();
+    const pendingSubmitData = useRef<Record<string, unknown> | null>(null);
 
     // Get current date in YYYY-MM-DD format
     const getCurrentDate = (): string => {
@@ -126,212 +134,225 @@ export function ExpenseForm({
         return `${year}-${month}-${day}`;
     };
 
-    const { data, setData, post, put, processing, errors } = useForm(
-        {
-            name: expense?.name || '',
-            expense_date:
-                formatDateForInput(expense?.expense_date) || getCurrentDate(),
-            observation: expense?.observation || '',
-            document_number: expense?.document_number || '',
-            document: null as File | null,
-            payment_method_id: expense?.payment_method_id
-                ? expense.payment_method_id.toString()
-                : '',
-            details:
-                expense?.expense_details.map((d) => ({
-                    id: d.id,
-                    name: d.name,
-                    amount: d.amount,
-                    quantity: Math.floor(
-                        parseFloat(d.quantity) || 1,
-                    ).toString(), // Convert to integer without decimals
-                    observation: d.observation || '',
-                    category_id: d.category_id.toString(),
+    // Inertia v2: useForm solo acepta datos iniciales. Pasar un segundo objeto { transform }
+    // hace que Inertia interprete mal los argumentos (Wayfinder) y el estado quede solo con { transform },
+    // dejando todos los campos vacíos. El callback va en form.transform().
+    const {
+        data,
+        setData,
+        post,
+        put,
+        processing,
+        errors,
+        transform: setFormTransform,
+    } = useForm({
+        name: expense?.name || '',
+        expense_date:
+            formatDateForInput(expense?.expense_date) || getCurrentDate(),
+        observation: expense?.observation || '',
+        document_number: expense?.document_number || '',
+        document: null as File | null,
+        payment_method_id: expense?.payment_method_id
+            ? expense.payment_method_id.toString()
+            : '',
+        details:
+            expense?.expense_details?.map((d) => ({
+                id: d.id,
+                name: d.name,
+                amount: d.amount,
+                quantity: Math.floor(
+                    parseFloat(d.quantity) || 1,
+                ).toString(), // Convert to integer without decimals
+                observation: d.observation || '',
+                category_id: d.category_id.toString(),
+                _destroy: false,
+            })) ??
+            ([
+                {
+                    name: '',
+                    amount: '',
+                    quantity: '1',
+                    observation: '',
+                    category_id: '',
                     _destroy: false,
-                })) ||
-                ([
-                    {
-                        name: '',
-                        amount: '',
-                        quantity: '1',
-                        observation: '',
-                        category_id: '',
-                        _destroy: false,
-                    },
-                ] as ExpenseDetail[]),
-            expense_discounts:
-                expense?.expense_discounts?.map((ed) => ({
-                    id: ed.id,
-                    discount_id: ed.discount_id.toString(),
-                    observation: ed.observation || '',
-                    discount_amount: ed.discount_amount,
-                    date: formatDateForInput(ed.date) || getCurrentDate(),
-                    _destroy: false,
-                })) || ([] as ExpenseDiscount[]),
-        },
-        {
-            transform: (data) => {
-                // CRITICAL: Use pendingSubmitData if available (when submitting with file)
-                // This ensures we have all fields even if React state hasn't updated yet
-                const sourceData = pendingSubmitData.current || data;
+                },
+            ] as ExpenseDetail[]),
+        expense_discounts:
+            expense?.expense_discounts?.map((ed) => ({
+                id: ed.id,
+                discount_id: ed.discount_id.toString(),
+                observation: ed.observation || '',
+                discount_amount: ed.discount_amount,
+                date: formatDateForInput(ed.date) || getCurrentDate(),
+                _destroy: false,
+            })) || ([] as ExpenseDiscount[]),
+    });
 
-                // CRITICAL: This transform function MUST include ALL form fields
-                // When FormData is used (for file uploads with PUT), Inertia.js requires ALL fields to be explicitly included
-                // FormData serialization can lose data if fields are not properly included
-                const transformed: any = {};
+    useLayoutEffect(() => {
+        setFormTransform((formData) => {
+        // CRITICAL: Use pendingSubmitData if available (when submitting with file)
+        // This ensures we have all fields even if React state hasn't updated yet
+        const sourceData = pendingSubmitData.current || formData;
 
-                // Include ALL required fields - these MUST be sent as strings for FormData compatibility
-                transformed.name = String(sourceData.name || '');
+        // CRITICAL: This transform function MUST include ALL form fields
+        // When FormData is used (for file uploads with PUT), Inertia.js requires ALL fields to be explicitly included
+        // FormData serialization can lose data if fields are not properly included
+        const transformed: Record<string, unknown> = {};
 
-                // Ensure expense_date is always a string in YYYY-MM-DD format
-                if (
-                    !sourceData.expense_date ||
-                    String(sourceData.expense_date).trim() === ''
-                ) {
-                    const today = new Date();
-                    transformed.expense_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                } else {
-                    // Convert date format if needed (from DD/MM/YYYY to YYYY-MM-DD)
-                    const dateStr = String(sourceData.expense_date);
-                    if (dateStr.includes('/')) {
-                        // Format: DD/MM/YYYY -> YYYY-MM-DD
-                        const [day, month, year] = dateStr.split('/');
-                        transformed.expense_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    } else {
-                        transformed.expense_date = dateStr;
+        // Include ALL required fields - these MUST be sent as strings for FormData compatibility
+        transformed.name = String(sourceData.name || '');
+
+        // Ensure expense_date is always a string in YYYY-MM-DD format
+        if (
+            !sourceData.expense_date ||
+            String(sourceData.expense_date).trim() === ''
+        ) {
+            const today = new Date();
+            transformed.expense_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        } else {
+            // Convert date format if needed (from DD/MM/YYYY to YYYY-MM-DD)
+            const dateStr = String(sourceData.expense_date);
+            if (dateStr.includes('/')) {
+                // Format: DD/MM/YYYY -> YYYY-MM-DD
+                const [day, month, year] = dateStr.split('/');
+                transformed.expense_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            } else {
+                transformed.expense_date = dateStr;
+            }
+        }
+
+        transformed.payment_method_id = String(
+            sourceData.payment_method_id || '',
+        );
+
+        // Include ALL optional fields
+        transformed.observation =
+            sourceData.observation === ''
+                ? null
+                : sourceData.observation || null;
+        transformed.document_number =
+            sourceData.document_number === ''
+                ? null
+                : sourceData.document_number || null;
+
+        // Serialize details array properly for FormData
+        // In FormData, arrays must be properly serialized for Laravel to parse them correctly
+        if (
+            Array.isArray(sourceData.details) &&
+            sourceData.details.length > 0
+        ) {
+            transformed.details = sourceData.details.map(
+                (detail: ExpenseDetail) => {
+                    const detailObj: Record<string, unknown> = {
+                        name: String(detail.name || ''),
+                        amount: String(detail.amount || '0'),
+                        quantity: String(detail.quantity || '1'),
+                        category_id: String(detail.category_id || ''),
+                        _destroy: detail._destroy || false,
+                    };
+
+                    // Only include id if it exists (for updates)
+                    if (detail.id) {
+                        detailObj.id = String(detail.id);
                     }
-                }
 
-                transformed.payment_method_id = String(
-                    sourceData.payment_method_id || '',
-                );
+                    // Only include observation if it's not empty
+                    if (
+                        detail.observation &&
+                        detail.observation.trim() !== ''
+                    ) {
+                        detailObj.observation = detail.observation;
+                    } else {
+                        detailObj.observation = null;
+                    }
 
-                // Include ALL optional fields
-                transformed.observation =
-                    sourceData.observation === ''
-                        ? null
-                        : sourceData.observation || null;
-                transformed.document_number =
-                    sourceData.document_number === ''
-                        ? null
-                        : sourceData.document_number || null;
+                    return detailObj;
+                },
+            );
+        } else {
+            transformed.details = [];
+        }
 
-                // Serialize details array properly for FormData
-                // In FormData, arrays must be properly serialized for Laravel to parse them correctly
-                if (
-                    Array.isArray(sourceData.details) &&
-                    sourceData.details.length > 0
-                ) {
-                    transformed.details = sourceData.details.map(
-                        (detail: ExpenseDetail) => {
-                            const detailObj: any = {
-                                name: String(detail.name || ''),
-                                amount: String(detail.amount || '0'),
-                                quantity: String(detail.quantity || '1'),
-                                category_id: String(detail.category_id || ''),
-                                _destroy: detail._destroy || false,
-                            };
+        // Serialize expense_discounts array properly for FormData
+        if (
+            Array.isArray(sourceData.expense_discounts) &&
+            sourceData.expense_discounts.length > 0
+        ) {
+            transformed.expense_discounts =
+                sourceData.expense_discounts.map(
+                    (discount: ExpenseDiscount) => {
+                        const discountObj: Record<string, unknown> = {
+                            discount_id: String(
+                                discount.discount_id || '',
+                            ),
+                            discount_amount: String(
+                                discount.discount_amount || '0',
+                            ),
+                            _destroy: discount._destroy || false,
+                        };
 
-                            // Only include id if it exists (for updates)
-                            if (detail.id) {
-                                detailObj.id = String(detail.id);
-                            }
+                        // Only include id if it exists (for updates)
+                        if (discount.id) {
+                            discountObj.id = String(discount.id);
+                        }
 
-                            // Only include observation if it's not empty
-                            if (
-                                detail.observation &&
-                                detail.observation.trim() !== ''
-                            ) {
-                                detailObj.observation = detail.observation;
+                        // Include date - ensure it's in YYYY-MM-DD format
+                        if (discount.date) {
+                            const dateStr = String(discount.date);
+                            if (dateStr.includes('/')) {
+                                // Format: DD/MM/YYYY -> YYYY-MM-DD
+                                const [day, month, year] =
+                                    dateStr.split('/');
+                                discountObj.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                             } else {
-                                detailObj.observation = null;
+                                discountObj.date = dateStr;
                             }
+                        } else {
+                            // Default to current date if not provided
+                            const today = new Date();
+                            discountObj.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                        }
 
-                            return detailObj;
-                        },
-                    );
-                } else {
-                    transformed.details = [];
-                }
+                        // Only include observation if it's not empty
+                        if (
+                            discount.observation &&
+                            discount.observation.trim() !== ''
+                        ) {
+                            discountObj.observation =
+                                discount.observation;
+                        } else {
+                            discountObj.observation = null;
+                        }
 
-                // Serialize expense_discounts array properly for FormData
-                if (
-                    Array.isArray(sourceData.expense_discounts) &&
-                    sourceData.expense_discounts.length > 0
-                ) {
-                    transformed.expense_discounts =
-                        sourceData.expense_discounts.map(
-                            (discount: ExpenseDiscount) => {
-                                const discountObj: any = {
-                                    discount_id: String(
-                                        discount.discount_id || '',
-                                    ),
-                                    discount_amount: String(
-                                        discount.discount_amount || '0',
-                                    ),
-                                    _destroy: discount._destroy || false,
-                                };
+                        return discountObj;
+                    },
+                );
+        } else {
+            transformed.expense_discounts = [];
+        }
 
-                                // Only include id if it exists (for updates)
-                                if (discount.id) {
-                                    discountObj.id = String(discount.id);
-                                }
+        // Include document ONLY if it's a File object
+        // This is critical: only include if it's actually a File
+        if (sourceData.document instanceof File) {
+            transformed.document = sourceData.document;
+        }
 
-                                // Include date - ensure it's in YYYY-MM-DD format
-                                if (discount.date) {
-                                    const dateStr = String(discount.date);
-                                    if (dateStr.includes('/')) {
-                                        // Format: DD/MM/YYYY -> YYYY-MM-DD
-                                        const [day, month, year] =
-                                            dateStr.split('/');
-                                        discountObj.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                                    } else {
-                                        discountObj.date = dateStr;
-                                    }
-                                } else {
-                                    // Default to current date if not provided
-                                    const today = new Date();
-                                    discountObj.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                                }
+        // Clear pending data after transform
+        pendingSubmitData.current = null;
 
-                                // Only include observation if it's not empty
-                                if (
-                                    discount.observation &&
-                                    discount.observation.trim() !== ''
-                                ) {
-                                    discountObj.observation =
-                                        discount.observation;
-                                } else {
-                                    discountObj.observation = null;
-                                }
+        return transformed;
+    });
+    }, [setFormTransform]);
 
-                                return discountObj;
-                            },
-                        );
-                } else {
-                    transformed.expense_discounts = [];
-                }
-
-                // Include document ONLY if it's a File object
-                // This is critical: only include if it's actually a File
-                if (sourceData.document instanceof File) {
-                    transformed.document = sourceData.document;
-                }
-
-                // Clear pending data after transform
-                pendingSubmitData.current = null;
-
-                return transformed;
-            },
-        },
-    );
+    const details: ExpenseDetail[] = data['details'] ?? [];
+    const expenseDiscounts: ExpenseDiscount[] = data['expense_discounts'] ?? [];
 
     // Calculate tags dynamically from selected entities
     const calculatedTags = useMemo(() => {
         const tags: string[] = [];
 
         // Get tags from categories (from expense details)
-        data.details.forEach((detail) => {
+        details.forEach((detail) => {
             if (
                 detail.category_id &&
                 !detail._destroy &&
@@ -357,7 +378,7 @@ export function ExpenseForm({
         }
 
         // Get tags from discounts (from expense discounts)
-        data.expense_discounts.forEach((expenseDiscount) => {
+        expenseDiscounts.forEach((expenseDiscount) => {
             if (
                 expenseDiscount.discount_id &&
                 !expenseDiscount._destroy &&
@@ -377,9 +398,9 @@ export function ExpenseForm({
         // Remove duplicates and empty values
         return Array.from(new Set(tags.filter((tag) => tag.trim() !== '')));
     }, [
-        data.details,
+        details,
         data.payment_method_id,
-        data.expense_discounts,
+        expenseDiscounts,
         categories,
         paymentMethods,
         discounts,
@@ -411,8 +432,6 @@ export function ExpenseForm({
         return '';
     });
     const [isSubmittingWithFile, setIsSubmittingWithFile] = useState(false);
-    // Use ref to store complete data for transform when submitting with file
-    const pendingSubmitData = useRef<any>(null);
 
     // Note: Discount validation is handled in the backend via ExpenseRequest
 
@@ -430,8 +449,8 @@ export function ExpenseForm({
                 data.name &&
                 data.expense_date &&
                 data.payment_method_id &&
-                data.details &&
-                data.details.length > 0;
+                details &&
+                details.length > 0;
 
             if (!hasAllRequiredFields) {
                 // Fill missing fields from expense - this ensures transform receives all data
@@ -448,9 +467,9 @@ export function ExpenseForm({
                     document_number:
                         data.document_number ?? expense.document_number ?? '',
                     details:
-                        data.details && data.details.length > 0
-                            ? data.details
-                            : expense.expense_details.map((d) => ({
+                        details && details.length > 0
+                            ? details
+                            : (expense.expense_details ?? []).map((d) => ({
                                   id: d.id,
                                   name: d.name,
                                   amount: d.amount,
@@ -524,7 +543,7 @@ export function ExpenseForm({
 
     const addDetail = () => {
         setData('details', [
-            ...data.details,
+            ...details,
             {
                 name: '',
                 amount: '',
@@ -537,16 +556,16 @@ export function ExpenseForm({
     };
 
     const removeDetail = (index: number) => {
-        const detail = data.details[index];
+        const detail = details[index];
 
         // If it's an existing detail (has id), mark for deletion instead of removing
         if (detail.id) {
-            const newDetails = [...data.details];
+            const newDetails = [...details];
             newDetails[index] = { ...detail, _destroy: true };
             setData('details', newDetails);
         } else {
             // If it's a new detail, remove it from the array
-            const newDetails = data.details.filter((_, i) => i !== index);
+            const newDetails = details.filter((_, i) => i !== index);
             setData(
                 'details',
                 newDetails.length > 0
@@ -566,7 +585,7 @@ export function ExpenseForm({
     };
 
     const restoreDetail = (index: number) => {
-        const newDetails = [...data.details];
+        const newDetails = [...details];
         newDetails[index] = { ...newDetails[index], _destroy: false };
         setData('details', newDetails);
     };
@@ -576,7 +595,7 @@ export function ExpenseForm({
         field: keyof ExpenseDetail,
         value: string,
     ) => {
-        const newDetails = [...data.details];
+        const newDetails = [...details];
         // Convert quantity to integer string (remove decimals)
         if (field === 'quantity') {
             const intValue = Math.max(1, Math.floor(parseFloat(value) || 1));
@@ -592,7 +611,7 @@ export function ExpenseForm({
 
     const addDiscount = () => {
         // Validar que todos los descuentos existentes tengan un monto mayor a cero
-        const activeDiscounts = data.expense_discounts.filter(
+        const activeDiscounts = expenseDiscounts.filter(
             (d) => !d._destroy,
         );
 
@@ -611,7 +630,7 @@ export function ExpenseForm({
         }
 
         setData('expense_discounts', [
-            ...data.expense_discounts,
+            ...expenseDiscounts,
             {
                 discount_id: '',
                 observation: '',
@@ -623,16 +642,16 @@ export function ExpenseForm({
     };
 
     const removeDiscount = (index: number) => {
-        const discount = data.expense_discounts[index];
+        const discount = expenseDiscounts[index];
 
         // If it's an existing discount (has id), mark for deletion instead of removing
         if (discount.id) {
-            const newDiscounts = [...data.expense_discounts];
+            const newDiscounts = [...expenseDiscounts];
             newDiscounts[index] = { ...discount, _destroy: true };
             setData('expense_discounts', newDiscounts);
         } else {
             // If it's a new discount, remove it from the array
-            const newDiscounts = data.expense_discounts.filter(
+            const newDiscounts = expenseDiscounts.filter(
                 (_, i) => i !== index,
             );
             setData('expense_discounts', newDiscounts);
@@ -640,7 +659,7 @@ export function ExpenseForm({
     };
 
     const restoreDiscount = (index: number) => {
-        const newDiscounts = [...data.expense_discounts];
+        const newDiscounts = [...expenseDiscounts];
         newDiscounts[index] = {
             ...newDiscounts[index],
             _destroy: false,
@@ -653,7 +672,7 @@ export function ExpenseForm({
         field: keyof ExpenseDiscount,
         value: string,
     ) => {
-        const newDiscounts = [...data.expense_discounts];
+        const newDiscounts = [...expenseDiscounts];
         newDiscounts[index] = { ...newDiscounts[index], [field]: value };
         setData('expense_discounts', newDiscounts);
     };
@@ -730,7 +749,7 @@ export function ExpenseForm({
     };
 
     const calculateSubtotal = () => {
-        return data.details
+        return details
             .filter((detail) => !detail._destroy)
             .reduce((sum, detail) => {
                 const amount = parseFloat(detail.amount) || 0;
@@ -740,7 +759,7 @@ export function ExpenseForm({
     };
 
     const calculateAppliedDiscounts = () => {
-        return data.expense_discounts
+        return expenseDiscounts
             .filter((discount) => !discount._destroy)
             .reduce((sum, discount) => {
                 const amount = parseFloat(discount.discount_amount) || 0;
@@ -758,7 +777,7 @@ export function ExpenseForm({
         e.preventDefault();
 
         // Validar que no haya descuentos con monto cero antes de enviar
-        const activeDiscounts = data.expense_discounts.filter(
+        const activeDiscounts = expenseDiscounts.filter(
             (d) => !d._destroy,
         );
 
@@ -796,9 +815,9 @@ export function ExpenseForm({
                 document_number:
                     data.document_number ?? expense.document_number ?? '',
                 details:
-                    data.details && data.details.length > 0
-                        ? data.details
-                        : expense.expense_details.map((d) => ({
+                    details && details.length > 0
+                        ? details
+                        : (expense.expense_details ?? []).map((d) => ({
                               id: d.id,
                               name: d.name,
                               amount: d.amount,
@@ -810,8 +829,8 @@ export function ExpenseForm({
                               _destroy: false,
                           })),
                 expense_discounts:
-                    data.expense_discounts && data.expense_discounts.length > 0
-                        ? data.expense_discounts
+                    expenseDiscounts && expenseDiscounts.length > 0
+                        ? expenseDiscounts
                         : expense.expense_discounts?.map((ed) => ({
                               id: ed.id,
                               discount_id: ed.discount_id.toString(),
@@ -957,7 +976,7 @@ export function ExpenseForm({
                 formData.append('delete_document', '1'); // Signal to delete document
 
                 // Serialize details array
-                data.details.forEach((detail: ExpenseDetail, index: number) => {
+                details.forEach((detail: ExpenseDetail, index: number) => {
                     if (detail.id) {
                         formData.append(
                             `details[${index}][id]`,
@@ -987,7 +1006,7 @@ export function ExpenseForm({
                 });
 
                 // Serialize expense_discounts array for FormData
-                data.expense_discounts.forEach(
+                expenseDiscounts.forEach(
                     (discount: ExpenseDiscount, index: number) => {
                         if (discount.id) {
                             formData.append(
@@ -1190,9 +1209,9 @@ export function ExpenseForm({
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {data.expense_discounts.map((discount, index) => {
+                    {expenseDiscounts.map((discount, index) => {
                         // Calcular el número del descuento basado en los descuentos que no están marcados para eliminar
-                        const discountNumber = data.expense_discounts
+                        const discountNumber = expenseDiscounts
                             .slice(0, index + 1)
                             .filter((d) => !d._destroy).length;
 
@@ -1407,7 +1426,7 @@ export function ExpenseForm({
                                                 </div>
 
                                                 <div className="flex items-end md:col-span-1">
-                                                    {data.expense_discounts.filter(
+                                                    {expenseDiscounts.filter(
                                                         (d) => !d._destroy,
                                                     ).length > 0 && (
                                                         <Button
@@ -1464,14 +1483,14 @@ export function ExpenseForm({
                         );
                     })}
 
-                    {data.expense_discounts.filter((d) => !d._destroy)
+                    {expenseDiscounts.filter((d) => !d._destroy)
                         .length === 0 && (
                         <p className="py-4 text-center text-sm text-muted-foreground">
                             No tiene descuentos aplicados
                         </p>
                     )}
 
-                    {data.expense_discounts.filter((d) => !d._destroy).length >
+                    {expenseDiscounts.filter((d) => !d._destroy).length >
                         0 && (
                         <div className="flex justify-end border-t pt-4">
                             <div className="space-y-1 text-right">
@@ -1479,12 +1498,12 @@ export function ExpenseForm({
                                     <span className="text-muted-foreground">
                                         Total Descuentos (
                                         {
-                                            data.expense_discounts.filter(
+                                            expenseDiscounts.filter(
                                                 (d) => !d._destroy,
                                             ).length
                                         }{' '}
                                         descuento
-                                        {data.expense_discounts.filter(
+                                        {expenseDiscounts.filter(
                                             (d) => !d._destroy,
                                         ).length !== 1
                                             ? 's'
@@ -1523,9 +1542,9 @@ export function ExpenseForm({
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {data.details.map((detail, index) => {
+                    {details.map((detail, index) => {
                         // Calcular el número del ítem basado en los detalles que no están marcados para eliminar
-                        const itemNumber = data.details
+                        const itemNumber = details
                             .slice(0, index + 1)
                             .filter((d) => !d._destroy).length;
 
@@ -1768,7 +1787,7 @@ export function ExpenseForm({
                                                 </div>
 
                                                 <div className="flex items-end md:col-span-1">
-                                                    {(data.details.filter(
+                                                    {(details.filter(
                                                         (d) => !d._destroy,
                                                     ).length > 1 ||
                                                         !detail.id) && (
@@ -1832,7 +1851,7 @@ export function ExpenseForm({
                                 <span className="text-muted-foreground">
                                     Subtotal (
                                     {
-                                        data.details.filter((d) => !d._destroy)
+                                        details.filter((d) => !d._destroy)
                                             .length
                                     }{' '}
                                     ítems)
@@ -1841,13 +1860,13 @@ export function ExpenseForm({
                                     ${calculateSubtotal().toFixed(2)}
                                 </span>
                             </div>
-                            {data.expense_discounts.filter((d) => !d._destroy)
+                            {expenseDiscounts.filter((d) => !d._destroy)
                                 .length > 0 && (
                                 <div className="flex items-center justify-between gap-8 text-sm">
                                     <span className="text-muted-foreground">
                                         Descuentos Aplicados (
                                         {
-                                            data.expense_discounts.filter(
+                                            expenseDiscounts.filter(
                                                 (d) => !d._destroy,
                                             ).length
                                         }
@@ -1867,18 +1886,18 @@ export function ExpenseForm({
                                     ${calculateTotal().toFixed(2)}
                                 </span>
                             </div>
-                            {(data.details.some((d) => d._destroy) ||
-                                data.expense_discounts.some(
+                            {(details.some((d) => d._destroy) ||
+                                expenseDiscounts.some(
                                     (d) => d._destroy,
                                 )) && (
                                 <p className="mt-1 text-xs text-muted-foreground">
                                     {
-                                        data.details.filter((d) => d._destroy)
+                                        details.filter((d) => d._destroy)
                                             .length
                                     }{' '}
                                     ítem(s) y{' '}
                                     {
-                                        data.expense_discounts.filter(
+                                        expenseDiscounts.filter(
                                             (d) => d._destroy,
                                         ).length
                                     }{' '}

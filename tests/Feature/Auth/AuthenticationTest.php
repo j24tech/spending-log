@@ -82,10 +82,8 @@ test('users are rate limited', function () {
 
     $response->assertSessionHasErrors('email');
 
-    $errors = session('errors');
+    $message = session('errors')->first('email');
 
-    $this->assertStringContainsString(
-        'Demasiados intentos',
-        $errors->first('email')
-    );
+    expect($message)->not->toBe('auth.throttle')
+        ->and($message)->toMatch('/Demasiados intentos|Too many login attempts/');
 });

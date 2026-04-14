@@ -196,7 +196,7 @@ export function ExpensesTable({ data, categories }: Props) {
                                                                         key={
                                                                             index
                                                                         }
-                                                                        variant="secondary"
+                                                                        variant="tag"
                                                                     >
                                                                         {tag}
                                                                     </Badge>

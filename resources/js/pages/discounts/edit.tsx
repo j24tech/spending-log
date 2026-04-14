@@ -143,10 +143,14 @@ export default function EditDiscount({ discount }: Props) {
                         </div>
 
                         <div className="flex justify-end gap-4">
-                            <Button type="button" variant="outline" asChild>
+                            <Button type="button" variant="cancel" asChild>
                                 <Link href="/discounts">Cancelar</Link>
                             </Button>
-                            <Button type="submit" disabled={processing}>
+                            <Button
+                                type="submit"
+                                variant="update"
+                                disabled={processing}
+                            >
                                 Actualizar Descuento
                             </Button>
                         </div>

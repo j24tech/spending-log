@@ -27,7 +27,7 @@ export default function CategoriesIndex({ categories }: Props) {
             <div className="space-y-6 px-4 md:px-6 lg:px-8">
                 <div className="flex items-center justify-between">
                     <Heading title="Categorías" />
-                    <Button asChild>
+                    <Button asChild variant="create">
                         <Link href="/categories/create">
                             <Plus className="mr-2 h-4 w-4" />
                             Nueva Categoría

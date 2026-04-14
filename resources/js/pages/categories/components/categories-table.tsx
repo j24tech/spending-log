@@ -70,7 +70,7 @@ export function CategoriesTable({ data }: Props) {
                                                         (tag, index) => (
                                                             <Badge
                                                                 key={index}
-                                                                variant="secondary"
+                                                                variant="tag"
                                                             >
                                                                 {tag}
                                                             </Badge>

@@ -205,7 +205,7 @@ export function EditDetailDialog({
                     <DialogFooter className="mt-6">
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="cancel"
                             onClick={() => onOpenChange(false)}
                         >
                             Cancelar

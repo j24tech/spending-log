@@ -129,10 +129,14 @@ export default function CreateCategory() {
                         </div>
 
                         <div className="flex justify-end gap-4">
-                            <Button type="button" variant="outline" asChild>
+                            <Button type="button" variant="cancel" asChild>
                                 <Link href="/categories">Cancelar</Link>
                             </Button>
-                            <Button type="submit" disabled={processing}>
+                            <Button
+                                type="submit"
+                                variant="create"
+                                disabled={processing}
+                            >
                                 Crear Categoría
                             </Button>
                         </div>

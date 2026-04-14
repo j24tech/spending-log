@@ -57,7 +57,7 @@ export default function UsersIndex({ users, filters }: Props) {
                             Administra los usuarios y sus permisos
                         </p>
                     </div>
-                    <Button asChild>
+                    <Button asChild variant="create">
                         <Link href={usersCreate.url()}>
                             <Plus className="mr-2 h-4 w-4" />
                             Nuevo Usuario

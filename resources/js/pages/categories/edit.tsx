@@ -140,10 +140,14 @@ export default function EditCategory({ category }: Props) {
                         </div>
 
                         <div className="flex justify-end gap-4">
-                            <Button type="button" variant="outline" asChild>
+                            <Button type="button" variant="cancel" asChild>
                                 <Link href="/categories">Cancelar</Link>
                             </Button>
-                            <Button type="submit" disabled={processing}>
+                            <Button
+                                type="submit"
+                                variant="update"
+                                disabled={processing}
+                            >
                                 Actualizar Categoría
                             </Button>
                         </div>

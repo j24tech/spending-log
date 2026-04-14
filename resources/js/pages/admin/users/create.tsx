@@ -168,13 +168,17 @@ export default function CreateUser() {
                         <div className="flex justify-end gap-4">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="cancel"
                                 asChild
                                 disabled={processing}
                             >
                                 <Link href={usersIndex.url()}>Cancelar</Link>
                             </Button>
-                            <Button type="submit" disabled={processing}>
+                            <Button
+                                type="submit"
+                                variant="create"
+                                disabled={processing}
+                            >
                                 {processing ? 'Creando...' : 'Crear Usuario'}
                             </Button>
                         </div>

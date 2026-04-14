@@ -70,7 +70,7 @@ export default function ExpensesIndex({ expenses, categories }: Props) {
             <div className="space-y-6 px-4 md:px-6 lg:px-8">
                 <div className="flex items-center justify-between">
                     <Heading title="Gastos" />
-                    <Button asChild>
+                    <Button asChild variant="create">
                         <Link href="/expenses/create">
                             <Plus className="mr-2 h-4 w-4" />
                             Nuevo Gasto

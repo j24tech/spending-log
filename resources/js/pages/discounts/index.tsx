@@ -27,7 +27,7 @@ export default function DiscountsIndex({ discounts }: Props) {
             <div className="space-y-6 px-4 md:px-6 lg:px-8">
                 <div className="flex items-center justify-between">
                     <Heading title="Tipos de Descuentos" />
-                    <Button asChild>
+                    <Button asChild variant="create">
                         <Link href="/discounts/create">
                             <Plus className="mr-2 h-4 w-4" />
                             Nuevo Descuento

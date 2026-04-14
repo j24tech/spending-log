@@ -172,10 +172,14 @@ export default function EditPaymentMethod({ paymentMethod }: Props) {
 
                         {/* Actions */}
                         <div className="flex items-center gap-4">
-                            <Button type="button" variant="outline" asChild>
+                            <Button type="button" variant="cancel" asChild>
                                 <Link href="/payment-methods">Cancelar</Link>
                             </Button>
-                            <Button type="submit" disabled={processing}>
+                            <Button
+                                type="submit"
+                                variant="update"
+                                disabled={processing}
+                            >
                                 {processing
                                     ? 'Actualizando...'
                                     : 'Actualizar Método de Pago'}

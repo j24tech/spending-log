@@ -27,7 +27,7 @@ export default function PaymentMethodsIndex({ paymentMethods }: Props) {
             <div className="space-y-6 px-4 md:px-6 lg:px-8">
                 <div className="flex items-center justify-between">
                     <Heading title="Métodos de Pago" />
-                    <Button asChild>
+                    <Button asChild variant="create">
                         <Link href="/payment-methods/create">
                             <Plus className="mr-2 h-4 w-4" />
                             Nuevo Método de Pago

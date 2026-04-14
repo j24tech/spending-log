@@ -66,7 +66,7 @@ export function DeleteDiscountDialog({ discount, open, onOpenChange }: Props) {
                     <DialogFooter>
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="cancel"
                             onClick={() => onOpenChange(false)}
                         >
                             Cancelar

@@ -1169,7 +1169,7 @@ export function ExpenseForm({
                             {calculatedTags.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
                                     {calculatedTags.map((tag, index) => (
-                                        <Badge key={index} variant="secondary">
+                                        <Badge key={index} variant="tag">
                                             {tag}
                                         </Badge>
                                     ))}
@@ -2016,10 +2016,14 @@ export function ExpenseForm({
 
             {/* Botones de acción */}
             <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" asChild>
+                <Button type="button" variant="cancel" asChild>
                     <Link href="/expenses">Cancelar</Link>
                 </Button>
-                <Button type="submit" disabled={processing}>
+                <Button
+                    type="submit"
+                    variant={isEditing ? 'update' : 'create'}
+                    disabled={processing}
+                >
                     {processing
                         ? 'Guardando...'
                         : isEditing

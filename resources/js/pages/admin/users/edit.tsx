@@ -204,13 +204,17 @@ export default function EditUser({ user }: Props) {
                         <div className="flex justify-end gap-4">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="cancel"
                                 asChild
                                 disabled={processing}
                             >
                                 <Link href={usersIndex.url()}>Cancelar</Link>
                             </Button>
-                            <Button type="submit" disabled={processing}>
+                            <Button
+                                type="submit"
+                                variant="update"
+                                disabled={processing}
+                            >
                                 {processing
                                     ? 'Actualizando...'
                                     : 'Actualizar Usuario'}

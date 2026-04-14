@@ -17,6 +17,8 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        /** Etiquetas de datos (tags); no usar para estados (Activo, roles, etc.) */
+        tag: "border border-white text-white bg-neutral-700 shadow-sm [a&]:hover:bg-neutral-600 dark:bg-neutral-800 dark:border-white/90 dark:[a&]:hover:bg-neutral-700",
       },
     },
     defaultVariants: {

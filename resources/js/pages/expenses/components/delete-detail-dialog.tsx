@@ -53,7 +53,7 @@ export function DeleteDetailDialog({
                     <DialogFooter>
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="cancel"
                             onClick={() => onOpenChange(false)}
                         >
                             Cancelar

@@ -18,7 +18,6 @@ import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
 import {
     FormEventHandler,
     useEffect,
-    useLayoutEffect,
     useMemo,
     useRef,
     useState,
@@ -188,42 +187,42 @@ export function ExpenseForm({
             })) || ([] as ExpenseDiscount[]),
     });
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         setFormTransform((formData) => {
-        // CRITICAL: Use pendingSubmitData if available (when submitting with file)
-        // This ensures we have all fields even if React state hasn't updated yet
-        const sourceData = pendingSubmitData.current || formData;
+            // CRITICAL: Use pendingSubmitData if available (when submitting with file)
+            // This ensures we have all fields even if React state hasn't updated yet
+            const sourceData = pendingSubmitData.current || formData;
 
-        // CRITICAL: This transform function MUST include ALL form fields
-        // When FormData is used (for file uploads with PUT), Inertia.js requires ALL fields to be explicitly included
-        // FormData serialization can lose data if fields are not properly included
-        const transformed: Record<string, unknown> = {};
+            // CRITICAL: This transform function MUST include ALL form fields
+            // When FormData is used (for file uploads with PUT), Inertia.js requires ALL fields to be explicitly included
+            // FormData serialization can lose data if fields are not properly included
+            const transformed: Record<string, unknown> = {};
 
-        // Include ALL required fields - these MUST be sent as strings for FormData compatibility
-        transformed.name = String(sourceData.name || '');
+            // Include ALL required fields - these MUST be sent as strings for FormData compatibility
+            transformed.name = String(sourceData.name || '');
 
-        // Ensure expense_date is always a string in YYYY-MM-DD format
-        if (
-            !sourceData.expense_date ||
-            String(sourceData.expense_date).trim() === ''
-        ) {
-            const today = new Date();
-            transformed.expense_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        } else {
-            // Convert date format if needed (from DD/MM/YYYY to YYYY-MM-DD)
-            const dateStr = String(sourceData.expense_date);
-            if (dateStr.includes('/')) {
-                // Format: DD/MM/YYYY -> YYYY-MM-DD
-                const [day, month, year] = dateStr.split('/');
-                transformed.expense_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            // Ensure expense_date is always a string in YYYY-MM-DD format
+            if (
+                !sourceData.expense_date ||
+                String(sourceData.expense_date).trim() === ''
+            ) {
+                const today = new Date();
+                transformed.expense_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
             } else {
-                transformed.expense_date = dateStr;
+                // Convert date format if needed (from DD/MM/YYYY to YYYY-MM-DD)
+                const dateStr = String(sourceData.expense_date);
+                if (dateStr.includes('/')) {
+                    // Format: DD/MM/YYYY -> YYYY-MM-DD
+                    const [day, month, year] = dateStr.split('/');
+                    transformed.expense_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                } else {
+                    transformed.expense_date = dateStr;
+                }
             }
-        }
 
-        transformed.payment_method_id = String(
-            sourceData.payment_method_id || '',
-        );
+            transformed.payment_method_id = String(
+                sourceData.payment_method_id || '',
+            );
 
         // Include ALL optional fields
         transformed.observation =

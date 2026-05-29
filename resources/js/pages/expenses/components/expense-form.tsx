@@ -18,7 +18,6 @@ import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
 import {
     FormEventHandler,
     useEffect,
-    useLayoutEffect,
     useMemo,
     useRef,
     useState,
@@ -188,7 +187,7 @@ export function ExpenseForm({
             })) || ([] as ExpenseDiscount[]),
     });
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         setFormTransform((formData) => {
         // CRITICAL: Use pendingSubmitData if available (when submitting with file)
         // This ensures we have all fields even if React state hasn't updated yet
